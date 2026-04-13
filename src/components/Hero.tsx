@@ -1,14 +1,15 @@
 import React from 'react';
-import { Play, Info, Plus } from 'lucide-react';
+import { Play, Info, Plus, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface HeroProps {
   movie: any;
   onPlay: () => void;
   onInfo: () => void;
+  onDownload: () => void;
 }
 
-export function Hero({ movie, onPlay, onInfo }: HeroProps) {
+export function Hero({ movie, onPlay, onInfo, onDownload }: HeroProps) {
   if (!movie) return <div className="h-[85vh] bg-zinc-900 animate-pulse" />;
 
   const backdrop = `https://image.tmdb.org/t/p/original${movie.backdrop_path}`;
@@ -62,6 +63,16 @@ export function Hero({ movie, onPlay, onInfo }: HeroProps) {
               Watch Now
             </motion.button>
             
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onDownload}
+              className="px-8 py-4 bg-red-600 text-white rounded-xl font-bold flex items-center gap-2 shadow-xl hover:bg-red-700 transition-colors"
+            >
+              <Download className="w-6 h-6" />
+              Download
+            </motion.button>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

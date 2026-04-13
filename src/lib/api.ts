@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Always use relative path for the API since it's served from the same origin
+const API_URL = '/api';
 
 export const API = axios.create({
   baseURL: API_URL,

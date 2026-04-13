@@ -50,6 +50,25 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Debug TMDB
+  app.get("/api/debug/tmdb", async (req, res) => {
+    try {
+      const { tmdbService } = await import("./src/services/tmdb.service");
+      const results = await tmdbService.getTrending('movie');
+      res.json({
+        keyPresent: !!process.env.TMDB_API_KEY,
+        keyLength: process.env.TMDB_API_KEY?.length,
+        testResultCount: results.length,
+        results: results.slice(0, 2)
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        error: error.message,
+        details: error.response?.data
+      });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
