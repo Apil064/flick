@@ -45,6 +45,18 @@ async function startServer() {
   app.use("/api/user", userRoutes);
   app.use("/api/embed", embedRoutes);
 
+  // Search endpoint
+  app.get("/api/search", async (req, res) => {
+    try {
+      const { q, page } = req.query;
+      const { tmdbService } = await import("./src/services/tmdb.service");
+      const data = await tmdbService.searchMulti(q as string, Number(page) || 1);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to search" });
+    }
+  });
+
   // Health Check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
