@@ -25,7 +25,7 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
                 ...item,
                 id: item.tmdb_id,
                 progress_seconds: item.progress_seconds,
-                season: item.sexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=ason,
+                season: item.season,
                 episode: item.episode
               })}
             >
