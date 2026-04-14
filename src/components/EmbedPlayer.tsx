@@ -152,8 +152,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
           src={videoUrl}
           className="w-full h-full border-none"
           allowFullScreen
-          allow="autoplay; encrypted-media; fullscreen"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen"
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+           sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
           title="Video Player"
         />
 
