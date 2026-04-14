@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, List, Play, Info, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, ChevronLeft, List, Play, ChevronRight, Maximize } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
 
@@ -21,13 +21,13 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [currentSeason, setCurrentSeason] = useState(season);
   const [currentEpisode, setCurrentEpisode] = useState(episode);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   
   const { data: details } = useMovieDetails(type, tmdbId);
   const { data: seasonDetails } = useTVSeason(tmdbId, currentSeason);
   const { mutate: saveProgress } = useSaveProgress();
   const [localProgress, setLocalProgress] = useState(startTime);
 
-  // Simulated progress tracking
   useEffect(() => {
     const interval = setInterval(() => {
       setLocalProgress(prev => prev + 1);
@@ -35,7 +35,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     return () => clearInterval(interval);
   }, [tmdbId, currentSeason, currentEpisode]);
 
-  // Periodic save to backend (every 30 seconds)
   useEffect(() => {
     const saveInterval = setInterval(() => {
       saveProgress({
@@ -47,13 +46,12 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         season: type === 'tv' ? currentSeason : null,
         episode: type === 'tv' ? currentEpisode : null,
         progress_seconds: localProgress,
-        duration_seconds: 3600 // Mock duration
+        duration_seconds: 3600
       });
     }, 30000);
 
     return () => {
       clearInterval(saveInterval);
-      // Save on unmount
       saveProgress({
         tmdb_id: tmdbId,
         media_type: type,
@@ -68,12 +66,9 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     };
   }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, localProgress]);
 
-  // Server 3 as requested (VidKing)
-  const tvSuffix = type === 'tv' ? `/${currentSeason}/${currentEpisode}` : '';
-  // Some players support ?start= or #t=
   const videoUrl = type === 'movie'
-  ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
-  : `https://vidking.net/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?color=E50914`
+    ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
+    : `https://vidking.net/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?color=E50914`
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -82,6 +77,15 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
+
+  const handleFullscreen = () => {
+    if (iframeRef.current) {
+      iframeRef.current.requestFullscreen().catch(() => {
+        // fallback: fullscreen the whole page
+        document.documentElement.requestFullscreen();
+      });
+    }
+  };
 
   const handleEpisodeChange = (s: number, e: number) => {
     setCurrentSeason(s);
@@ -96,7 +100,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden font-sans"
     >
-      {/* Top Bar - Minimal & Integrated */}
+      {/* Top Bar */}
       <div className="absolute top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
         <div className="flex items-center gap-6 pointer-events-auto">
           <button
@@ -137,6 +141,16 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
               <span className="hidden md:inline">Browse Episodes</span>
             </button>
           )}
+
+          {/* Custom Fullscreen Button */}
+          <button
+            onClick={handleFullscreen}
+            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
+            title="Fullscreen"
+          >
+            <Maximize className="w-6 h-6" />
+          </button>
+
           <button
             onClick={onClose}
             className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
@@ -149,15 +163,16 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       {/* Video Container */}
       <div className="flex-1 relative bg-black">
         <iframe
+          ref={iframeRef}
           src={videoUrl}
           className="w-full h-full border-none"
           allowFullScreen
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-           sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
           title="Video Player"
         />
 
-        {/* Episode Sidebar - Premium UI */}
+        {/* Episode Sidebar */}
         <AnimatePresence>
           {showEpisodeList && type === 'tv' && (
             <motion.div
