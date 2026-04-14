@@ -71,7 +71,9 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   // Server 3 as requested (VidKing)
   const tvSuffix = type === 'tv' ? `/${currentSeason}/${currentEpisode}` : '';
   // Some players support ?start= or #t=
-  const videoUrl = `https://vidking.net/embed/${type}/${tmdbId}${tvSuffix}?color=e50914${startTime > 0 ? `&start=${startTime}` : ''}`;
+  const videoUrl = type === 'movie'
+  ? `https://vidsrc.to/embed/movie/${tmdbId}`
+  : `https://vidsrc.to/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}`
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
