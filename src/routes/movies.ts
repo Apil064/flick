@@ -3,6 +3,28 @@ import { tmdbService } from '../services/tmdb.service';
 
 const router = Router();
 
+const GENRE_MAP: Record<string, string> = {
+  action: '28',
+  adventure: '12',
+  animation: '16',
+  comedy: '35',
+  crime: '80',
+  documentary: '99',
+  drama: '18',
+  family: '10751',
+  fantasy: '14',
+  history: '36',
+  horror: '27',
+  music: '10402',
+  mystery: '9648',
+  romance: '10749',
+  science_fiction: '878',
+  tv_movie: '10770',
+  thriller: '53',
+  war: '10752',
+  western: '37'
+};
+
 router.get('/trending', async (req, res) => {
   try {
     const data = await tmdbService.getTrending('movie');
@@ -27,6 +49,26 @@ router.get('/top-rated', async (req, res) => {
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch top rated movies' });
+  }
+});
+
+router.get('/recent', async (req, res) => {
+  try {
+    const data = await tmdbService.getRecent();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch recent movies' });
+  }
+});
+
+router.get('/by-genre', async (req, res) => {
+  try {
+    const genreName = (req.query.genre as string)?.toLowerCase();
+    const genreId = GENRE_MAP[genreName] || genreName;
+    const data = await tmdbService.getByGenre('movie', genreId);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch movies by genre' });
   }
 });
 

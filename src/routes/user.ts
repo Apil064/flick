@@ -11,10 +11,12 @@ router.get('/watchlist', async (req, res) => {
   try {
     // @ts-ignore
     const userId = req.auth.userId;
+    console.log(`🔍 Fetching watchlist for user: ${userId}`);
     const result = await query('SELECT * FROM watchlist WHERE user_id = $1 ORDER BY added_at DESC', [userId]);
     res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch watchlist' });
+  } catch (error: any) {
+    console.error('❌ Failed to fetch watchlist:', error.message);
+    res.status(500).json({ error: 'Failed to fetch watchlist', details: error.message });
   }
 });
 
@@ -23,13 +25,16 @@ router.post('/watchlist', async (req, res) => {
     // @ts-ignore
     const userId = req.auth.userId;
     const { tmdb_id, media_type, title, poster_path } = req.body;
+    console.log(`📝 Adding to watchlist: User=${userId}, Item=${tmdb_id}`);
+    
     await query(
       'INSERT INTO watchlist (user_id, tmdb_id, media_type, title, poster_path) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING',
       [userId, tmdb_id, media_type, title, poster_path]
     );
     res.status(201).json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to add to watchlist' });
+  } catch (error: any) {
+    console.error('❌ Failed to add to watchlist:', error.message);
+    res.status(500).json({ error: 'Failed to add to watchlist', details: error.message });
   }
 });
 
@@ -44,33 +49,47 @@ router.delete('/watchlist/:id', async (req, res) => {
   }
 });
 
-router.get('/history', async (req, res) => {
+router.get('/continue-watching', async (req, res) => {
   try {
     // @ts-ignore
     const userId = req.auth.userId;
-    const result = await query('SELECT * FROM watch_history WHERE user_id = $1 ORDER BY last_watched DESC', [userId]);
+    // Filter for progress between 5% and 95%
+    const result = await query(
+      `SELECT * FROM watch_history 
+       WHERE user_id = $1 
+       AND (progress_seconds::float / NULLIF(duration_seconds, 0)) BETWEEN 0.05 AND 0.95
+       ORDER BY last_watched DESC`, 
+      [userId]
+    );
     res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch history' });
+  } catch (error: any) {
+    console.error('❌ Failed to fetch continue watching:', error.message);
+    res.status(500).json({ error: 'Failed to fetch continue watching' });
   }
 });
 
-router.post('/history', async (req, res) => {
+router.post('/progress', async (req, res) => {
   try {
     // @ts-ignore
     const userId = req.auth.userId;
-    const { tmdb_id, media_type, title, poster_path, season, episode, progress_seconds, duration_seconds } = req.body;
+    const { tmdb_id, media_type, title, poster_path, backdrop_path, season, episode, progress_seconds, duration_seconds } = req.body;
+    
     await query(
-      `INSERT INTO watch_history (user_id, tmdb_id, media_type, title, poster_path, season, episode, progress_seconds, duration_seconds) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       ON CONFLICT (user_id, tmdb_id) DO UPDATE SET 
-       progress_seconds = EXCLUDED.progress_seconds, 
-       last_watched = NOW()`,
-      [userId, tmdb_id, media_type, title, poster_path, season, episode, progress_seconds, duration_seconds]
+      `INSERT INTO watch_history (
+        user_id, tmdb_id, media_type, title, poster_path, backdrop_path, season, episode, progress_seconds, duration_seconds, last_watched
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      ON CONFLICT (user_id, tmdb_id) DO UPDATE SET
+        season = EXCLUDED.season,
+        episode = EXCLUDED.episode,
+        progress_seconds = EXCLUDED.progress_seconds,
+        duration_seconds = EXCLUDED.duration_seconds,
+        last_watched = NOW()`,
+      [userId, tmdb_id, media_type, title, poster_path, backdrop_path, season, episode, progress_seconds, duration_seconds]
     );
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to save history' });
+    res.status(201).json({ success: true });
+  } catch (error: any) {
+    console.error('❌ Failed to save progress:', error.message);
+    res.status(500).json({ error: 'Failed to save progress' });
   }
 });
 

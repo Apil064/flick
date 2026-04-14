@@ -17,6 +17,17 @@ export const useTopRated = (type: 'movie' | 'tv' = 'movie') => useQuery({
   queryFn: () => API.get(`/${type === 'movie' ? 'movies' : 'tv'}/top-rated`).then(r => r.data),
 });
 
+export const useRecent = () => useQuery({
+  queryKey: ['recent'],
+  queryFn: () => API.get('/movies/recent').then(r => r.data),
+});
+
+export const useByGenreName = (genreName: string) => useQuery({
+  queryKey: ['genre-name', genreName],
+  queryFn: () => API.get(`/movies/by-genre?genre=${genreName}`).then(r => r.data),
+  enabled: !!genreName,
+});
+
 export const useNowPlaying = () => useQuery({
   queryKey: ['now-playing'],
   queryFn: () => API.get('/movies/now-playing').then(r => r.data),
@@ -63,6 +74,12 @@ export const useByGenre = (type: 'movie' | 'tv', genreId: string) => useQuery({
   enabled: !!genreId,
 });
 
+export const useTVSeason = (tvId: string, seasonNumber: number) => useQuery({
+  queryKey: ['season', tvId, seasonNumber],
+  queryFn: () => API.get(`/tv/${tvId}/season/${seasonNumber}`).then(r => r.data),
+  enabled: !!tvId && seasonNumber !== undefined,
+});
+
 export const useWatchlist = () => useQuery({
   queryKey: ['watchlist'],
   queryFn: () => API.get('/user/watchlist').then(r => r.data),
@@ -72,7 +89,18 @@ export const useAddToWatchlist = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (item: any) => API.post('/user/watchlist', item),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] }),
+    onMutate: async (newItem) => {
+      await queryClient.cancelQueries({ queryKey: ['watchlist'] });
+      const previousWatchlist = queryClient.getQueryData(['watchlist']);
+      queryClient.setQueryData(['watchlist'], (old: any) => [...(old || []), { ...newItem, id: Date.now() }]);
+      return { previousWatchlist };
+    },
+    onError: (err, newItem, context) => {
+      queryClient.setQueryData(['watchlist'], context?.previousWatchlist);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    },
   });
 };
 
@@ -80,19 +108,46 @@ export const useRemoveFromWatchlist = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => API.delete(`/user/watchlist/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['watchlist'] }),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['watchlist'] });
+      const previousWatchlist = queryClient.getQueryData(['watchlist']);
+      queryClient.setQueryData(['watchlist'], (old: any) => 
+        (old || []).filter((item: any) => String(item.tmdb_id) !== String(id))
+      );
+      return { previousWatchlist };
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['watchlist'], context?.previousWatchlist);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    },
   });
 };
 
-export const useHistory = () => useQuery({
-  queryKey: ['history'],
-  queryFn: () => API.get('/user/history').then(r => r.data),
+export const useContinueWatching = () => useQuery({
+  queryKey: ['continue-watching'],
+  queryFn: () => API.get('/user/continue-watching').then(r => r.data),
 });
 
 export const useSaveProgress = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => API.post('/user/history', data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['history'] }),
+    mutationFn: (data: any) => API.post('/user/progress', data),
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ['continue-watching'] });
+      const previousHistory = queryClient.getQueryData(['continue-watching']);
+      queryClient.setQueryData(['continue-watching'], (old: any) => {
+        const filtered = (old || []).filter((item: any) => String(item.tmdb_id) !== String(newData.tmdb_id));
+        return [{ ...newData, id: Date.now(), last_watched: new Date().toISOString() }, ...filtered];
+      });
+      return { previousHistory };
+    },
+    onError: (err, newData, context) => {
+      queryClient.setQueryData(['continue-watching'], context?.previousHistory);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['continue-watching'] });
+    },
   });
 };

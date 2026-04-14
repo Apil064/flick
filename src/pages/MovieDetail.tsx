@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Play, Plus, Star, Clock, Calendar, ChevronRight, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useMovieDetails, useMovieCredits, useSimilar, useAddToWatchlist, useWatchlist } from '../hooks/useMovies';
+import { useMovieDetails, useMovieCredits, useSimilar, useAddToWatchlist, useRemoveFromWatchlist, useWatchlist, useTVSeason } from '../hooks/useMovies';
 import { EmbedPlayer } from '../components/EmbedPlayer';
 import { useUser } from '@clerk/clerk-react';
 
@@ -9,42 +9,69 @@ interface MovieDetailProps {
   item: any;
   type: 'movie' | 'tv';
   onClose: () => void;
+  onItemClick?: (item: any, type: 'movie' | 'tv') => void;
 }
 
-export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose }) => {
+export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, onItemClick }) => {
   const { isSignedIn } = useUser();
   const [showPlayer, setShowPlayer] = useState(false);
+  const [selectedEpisode, setSelectedEpisode] = useState({ 
+    season: item.season || 1, 
+    episode: item.episode || 1,
+    startTime: item.progress_seconds || 0,
+    title: item.title,
+    posterPath: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+    backdropPath: item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')
+  });
+  const [activeSeason, setActiveSeason] = useState(item.season || 1);
+  
   const { data: details, isLoading } = useMovieDetails(type, item.id);
   const { data: credits } = useMovieCredits(type, item.id);
   const { data: similar } = useSimilar(type, item.id);
+  const { data: seasonDetails } = useTVSeason(item.id.toString(), activeSeason);
   const { data: watchlist } = useWatchlist();
   const { mutate: addToWatchlist } = useAddToWatchlist();
+  const { mutate: removeFromWatchlist } = useRemoveFromWatchlist();
 
   if (!item) return null;
 
-  const isInWatchlist = watchlist?.some((w: any) => w.tmdb_id === item.id);
+  const isInWatchlist = watchlist?.some((w: any) => String(w.tmdb_id) === String(item.id));
+
+  const handleWatchNow = (s = 1, e = 1, t = 0) => {
+    setSelectedEpisode({ 
+      season: s, 
+      episode: e, 
+      startTime: t,
+      title: item.title,
+      posterPath: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+      backdropPath: item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')
+    });
+    setShowPlayer(true);
+  };
 
   const handleWatchlistClick = () => {
     if (!isSignedIn) return;
     
-    if (!isInWatchlist) {
+    if (isInWatchlist) {
+      removeFromWatchlist(String(item.id));
+    } else {
       addToWatchlist({
         tmdb_id: item.id,
         media_type: type,
-        title: item.title || item.name,
-        poster_path: item.poster_path,
-        backdrop_path: item.backdrop_path,
-        overview: item.overview,
-        vote_average: item.vote_average,
-        release_date: item.release_date || item.first_air_date
+        title: item.title,
+        poster_path: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+        backdrop_path: item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
+        overview: item.description,
+        vote_average: item.rating,
+        release_date: item.release_year
       });
     }
   };
 
-  const backdropUrl = `https://image.tmdb.org/t/p/original${item.backdrop_path || item.poster_path}`;
-  const posterUrl = `https://image.tmdb.org/t/p/w500${item.poster_path}`;
-  const rating = item.vote_average?.toFixed(1) || 'N/A';
-  const year = (item.release_date || item.first_air_date || '').split('-')[0];
+  const backdropUrl = item.backdrop_url || item.poster_url;
+  const posterUrl = item.poster_url;
+  const rating = item.rating?.toFixed(1) || 'N/A';
+  const year = item.release_year;
 
   return (
     <>
@@ -106,7 +133,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose })
               </div>
 
               <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
-                {item.title || item.name}
+                {item.title}
               </h1>
 
               {details?.tagline && (
@@ -135,8 +162,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose })
 
             <div className="flex flex-wrap gap-4">
               <button
-                onClick={() => setShowPlayer(true)}
-                className="flex-1 md:flex-none px-10 py-4 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-3 group"
+                onClick={() => handleWatchNow()}
+                className="flex-1 md:flex-none px-10 py-4 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-3 group shadow-xl"
               >
                 <Play className="w-6 h-6 fill-black group-hover:scale-110 transition-transform" />
                 WATCH NOW
@@ -144,21 +171,83 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose })
               <button
                 onClick={handleWatchlistClick}
                 disabled={!isSignedIn}
-                className={`flex-1 md:flex-none px-10 py-4 font-black rounded-full transition-all border flex items-center justify-center gap-3 ${
+                className={`flex-1 md:flex-none px-10 py-4 font-black rounded-full transition-all border flex items-center justify-center gap-3 shadow-2xl group/watchlist ${
                   isInWatchlist 
-                    ? 'bg-accent-red border-accent-red text-white' 
-                    : 'bg-bg-secondary text-white hover:bg-zinc-800 border-white/10'
+                    ? 'bg-accent-red border-accent-red text-white scale-105 shadow-accent-red/20' 
+                    : 'bg-white/5 text-white hover:bg-white/10 border-white/20'
                 }`}
               >
-                {isInWatchlist ? <Check className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
-                {isInWatchlist ? 'IN MY LIST' : 'MY LIST'}
+                {isInWatchlist ? (
+                  <>
+                    <Check className="w-6 h-6" />
+                    ADDED TO LIST
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-6 h-6 group-hover/watchlist:rotate-90 transition-transform" />
+                    ADD TO LIST
+                  </>
+                )}
               </button>
             </div>
+
+            {/* Episodes Section for TV Shows */}
+            {type === 'tv' && details?.seasons && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-black tracking-tighter uppercase italic text-accent-red">Episodes</h3>
+                  <select 
+                    value={activeSeason}
+                    onChange={(e) => setActiveSeason(Number(e.target.value))}
+                    className="bg-bg-secondary border border-white/10 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest outline-none focus:border-accent-red transition-all cursor-pointer"
+                  >
+                    {details.seasons.filter((s: any) => s.season_number > 0).map((s: any) => (
+                      <option key={s.id} value={s.season_number}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {seasonDetails?.episodes?.map((ep: any) => (
+                    <button
+                      key={ep.id}
+                      onClick={() => handleWatchNow(activeSeason, ep.episode_number)}
+                      className="flex gap-4 p-3 rounded-2xl bg-white/5 border border-transparent hover:border-white/20 transition-all text-left group"
+                    >
+                      <div className="relative flex-shrink-0 w-32 aspect-video rounded-xl overflow-hidden bg-bg-secondary">
+                        <img
+                          src={ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : posterUrl}
+                          alt=""
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Play className="w-5 h-5 fill-white text-white" />
+                        </div>
+                        <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/60 backdrop-blur-md rounded text-[10px] font-black">
+                          EP {ep.episode_number}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 py-1">
+                        <h4 className="text-sm font-bold truncate mb-1 group-hover:text-accent-red transition-colors">
+                          {ep.name}
+                        </h4>
+                        <p className="text-[10px] text-text-secondary line-clamp-2 leading-relaxed">
+                          {ep.overview || "No description available."}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               <h3 className="text-lg font-bold uppercase tracking-widest text-text-secondary">Overview</h3>
               <p className="text-lg leading-relaxed text-text-secondary max-w-3xl">
-                {item.overview}
+                {item.description}
               </p>
             </div>
 
@@ -198,6 +287,11 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose })
                   {similar.slice(0, 10).map((s: any) => (
                     <div
                       key={s.id}
+                      onClick={() => {
+                        if (onItemClick) {
+                          onItemClick(s, type);
+                        }
+                      }}
                       className="flex-shrink-0 w-32 aspect-[2/3] rounded-lg overflow-hidden relative group cursor-pointer"
                     >
                       <img
@@ -223,7 +317,12 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose })
           <EmbedPlayer
             tmdbId={item.id.toString()}
             type={type}
+            season={selectedEpisode.season}
+            episode={selectedEpisode.episode}
             title={item.title || item.name}
+            posterPath={item.poster_path}
+            backdropPath={item.backdrop_path}
+            startTime={selectedEpisode.startTime}
             onClose={() => setShowPlayer(false)}
           />
         )}

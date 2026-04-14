@@ -57,19 +57,13 @@ export const Watchlist: React.FC = () => {
           {watchlist.map((item: any) => (
             <div key={item.id} className="relative group">
               <MovieCard
-                item={item}
+                item={{
+                  ...item,
+                  id: item.tmdb_id // Ensure MovieCard uses tmdb_id for comparison
+                }}
                 type={item.media_type}
                 onClick={() => setSelectedItem(item)}
               />
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  remove(item.id);
-                }}
-                className="absolute top-2 right-2 p-2 bg-black/60 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent-red"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
             </div>
           ))}
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Server, List } from 'lucide-react';
+import { X, ChevronLeft, List, Play, Info, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useMovieDetails } from '../hooks/useMovies';
+import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
 
 interface EmbedPlayerProps {
   tmdbId: string;
@@ -10,24 +10,68 @@ interface EmbedPlayerProps {
   episode?: number;
   title?: string;
   onClose: () => void;
+  posterPath?: string;
+  backdropPath?: string;
+  startTime?: number;
 }
 
-export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({ tmdbId, type, season = 1, episode = 1, title, onClose }) => {
-  const [activeServer, setActiveServer] = useState(0);
+export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({ 
+  tmdbId, type, season = 1, episode = 1, title, onClose, posterPath, backdropPath, startTime = 0 
+}) => {
   const [currentSeason, setCurrentSeason] = useState(season);
   const [currentEpisode, setCurrentEpisode] = useState(episode);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
+  
   const { data: details } = useMovieDetails(type, tmdbId);
+  const { data: seasonDetails } = useTVSeason(tmdbId, currentSeason);
+  const { mutate: saveProgress } = useSaveProgress();
+  const [localProgress, setLocalProgress] = useState(startTime);
 
+  // Simulated progress tracking
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLocalProgress(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [tmdbId, currentSeason, currentEpisode]);
+
+  // Periodic save to backend (every 30 seconds)
+  useEffect(() => {
+    const saveInterval = setInterval(() => {
+      saveProgress({
+        tmdb_id: tmdbId,
+        media_type: type,
+        title: title,
+        poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+        backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
+        season: type === 'tv' ? currentSeason : null,
+        episode: type === 'tv' ? currentEpisode : null,
+        progress_seconds: localProgress,
+        duration_seconds: 3600 // Mock duration
+      });
+    }, 30000);
+
+    return () => {
+      clearInterval(saveInterval);
+      // Save on unmount
+      saveProgress({
+        tmdb_id: tmdbId,
+        media_type: type,
+        title: title,
+        poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+        backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
+        season: type === 'tv' ? currentSeason : null,
+        episode: type === 'tv' ? currentEpisode : null,
+        progress_seconds: localProgress,
+        duration_seconds: 3600
+      });
+    };
+  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, localProgress]);
+
+  // Server 3 as requested (VidKing)
   const tvSuffix = type === 'tv' ? `/${currentSeason}/${currentEpisode}` : '';
-
-  const SOURCES = [
-    { name: 'Server 1', url: `https://player.cineby.workers.dev/${type}/${tmdbId}${tvSuffix}` },
-    { name: 'Server 2', url: `https://vidsrc.to/embed/${type}/${tmdbId}${tvSuffix}` },
-    { name: 'Server 3', url: `https://vidking.net/embed/${type}/${tmdbId}${tvSuffix}` },
-    { name: 'Server 4', url: `https://www.2embed.cc/embed/${tmdbId}${type === 'tv' ? `&s=${currentSeason}&e=${currentEpisode}` : ''}` },
-    { name: 'Server 5', url: `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1${type === 'tv' ? `&s=${currentSeason}&e=${currentEpisode}` : ''}` },
-  ];
+  // Some players support ?start= or #t=
+  const videoUrl = `https://vidking.net/embed/${type}/${tmdbId}${tvSuffix}?color=e50914${startTime > 0 ? `&start=${startTime}` : ''}`;
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -40,7 +84,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({ tmdbId, type, season =
   const handleEpisodeChange = (s: number, e: number) => {
     setCurrentSeason(s);
     setCurrentEpisode(e);
-    setShowEpisodeList(false);
+    if (window.innerWidth < 768) setShowEpisodeList(false);
   };
 
   return (
@@ -48,138 +92,170 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({ tmdbId, type, season =
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] bg-black flex flex-col"
+      className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden font-sans"
     >
-      {/* Top Bar */}
-      <div className="h-16 px-6 flex items-center justify-between bg-bg-primary/95 border-b border-white/5">
-        <div className="flex items-center gap-6">
+      {/* Top Bar - Minimal & Integrated */}
+      <div className="absolute top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
+        <div className="flex items-center gap-6 pointer-events-auto">
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 group shadow-2xl"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
           </button>
           <div className="flex flex-col">
-            <h2 className="text-sm font-bold truncate max-w-[200px] md:max-w-md">
+            <h2 className="text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[180px] md:max-w-lg">
               {title}
             </h2>
             {type === 'tv' && (
-              <span className="text-[10px] text-text-secondary font-bold uppercase tracking-widest">
-                Season {currentSeason} • Episode {currentEpisode}
-              </span>
+              <div className="flex items-center gap-2.5 mt-0.5">
+                <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
+                  S{currentSeason} • E{currentEpisode}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-white/20" />
+                <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
+                  {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
+                </span>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-2">
-          {SOURCES.map((server, idx) => (
-            <button
-              key={idx}
-              onClick={() => setActiveServer(idx)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                activeServer === idx
-                  ? 'bg-accent-red border-accent-red text-white'
-                  : 'bg-bg-secondary border-white/10 text-text-secondary hover:border-white/30'
-              }`}
-            >
-              {server.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 pointer-events-auto">
           {type === 'tv' && (
             <button
               onClick={() => setShowEpisodeList(!showEpisodeList)}
-              className={`p-2 rounded-full transition-colors ${showEpisodeList ? 'bg-accent-red text-white' : 'hover:bg-white/10'}`}
+              className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all border backdrop-blur-xl shadow-2xl ${
+                showEpisodeList 
+                  ? 'bg-accent-red border-accent-red text-white' 
+                  : 'bg-black/40 border-white/10 text-white hover:bg-white/10'
+              }`}
             >
-              <List className="w-5 h-5" />
+              <List className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Browse Episodes</span>
             </button>
           )}
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 relative flex">
+      {/* Video Container */}
+      <div className="flex-1 relative bg-black">
         <iframe
-          src={SOURCES[activeServer].url}
+          src={videoUrl}
           className="w-full h-full border-none"
           allowFullScreen
           allow="autoplay; encrypted-media"
+          title="Video Player"
         />
 
-        {/* Episode Sidebar */}
+        {/* Episode Sidebar - Premium UI */}
         <AnimatePresence>
           {showEpisodeList && type === 'tv' && (
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              className="absolute right-0 top-0 bottom-0 w-80 bg-bg-primary/95 backdrop-blur-xl border-l border-white/5 z-50 overflow-y-auto p-6"
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="absolute right-0 top-0 bottom-0 w-full md:w-[500px] bg-bg-primary/98 backdrop-blur-3xl border-l border-white/10 z-[60] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]"
             >
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-bold tracking-tight">Episodes</h3>
-                <button onClick={() => setShowEpisodeList(false)}>
-                  <X className="w-5 h-5" />
+              <div className="p-10 border-b border-white/5 flex items-center justify-between">
+                <div>
+                  <h3 className="text-3xl font-black tracking-tighter uppercase italic text-accent-red">Episodes</h3>
+                  <div className="flex items-center gap-4 mt-4">
+                    <div className="relative">
+                      <select 
+                        value={currentSeason}
+                        onChange={(e) => setCurrentSeason(Number(e.target.value))}
+                        className="appearance-none bg-bg-secondary border border-white/10 rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest outline-none focus:border-accent-red transition-all pr-12 cursor-pointer"
+                      >
+                        {details?.seasons?.filter((s: any) => s.season_number > 0).map((s: any) => (
+                          <option key={s.id} value={s.season_number}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none rotate-90" />
+                    </div>
+                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                      {seasonDetails?.episodes?.length || 0} Episodes Available
+                    </span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowEpisodeList(false)}
+                  className="p-3 hover:bg-white/10 rounded-full transition-colors border border-white/5"
+                >
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <div className="space-y-8">
-                {details?.seasons?.map((s: any) => (
-                  <div key={s.id} className="space-y-4">
-                    <h4 className="text-sm font-black text-text-secondary uppercase tracking-widest border-b border-white/5 pb-2">
-                      {s.name}
-                    </h4>
-                    <div className="grid grid-cols-4 gap-2">
-                      {Array.from({ length: s.episode_count }).map((_, i) => {
-                        const epNum = i + 1;
-                        const isActive = currentSeason === s.season_number && currentEpisode === epNum;
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => handleEpisodeChange(s.season_number, epNum)}
-                            className={`aspect-square rounded flex items-center justify-center text-xs font-bold transition-all ${
-                              isActive
-                                ? 'bg-accent-red text-white'
-                                : 'bg-bg-secondary hover:bg-zinc-800 text-text-secondary'
-                            }`}
-                          >
-                            {epNum}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
+                {seasonDetails?.episodes?.map((ep: any) => {
+                  const isActive = currentEpisode === ep.episode_number;
+                  return (
+                    <button
+                      key={ep.id}
+                      onClick={() => handleEpisodeChange(currentSeason, ep.episode_number)}
+                      className={`w-full flex gap-5 p-4 rounded-3xl transition-all border text-left group relative overflow-hidden ${
+                        isActive 
+                          ? 'bg-accent-red/10 border-accent-red/50 shadow-[0_0_30px_rgba(229,9,20,0.1)]' 
+                          : 'bg-white/5 border-transparent hover:bg-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="relative flex-shrink-0 w-36 md:w-44 aspect-video rounded-2xl overflow-hidden bg-bg-secondary shadow-lg">
+                        <img
+                          src={ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : details?.backdrop_url}
+                          alt=""
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                            <Play className="w-5 h-5 fill-white text-white" />
+                          </div>
+                        </div>
+                        <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/70 backdrop-blur-md rounded-lg text-[10px] font-black tracking-tighter">
+                          EP {ep.episode_number}
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0 py-1">
+                        <h4 className={`text-sm font-black tracking-tight truncate mb-1.5 ${isActive ? 'text-accent-red' : 'text-white'}`}>
+                          {ep.name}
+                        </h4>
+                        <p className="text-[11px] text-text-secondary line-clamp-2 leading-relaxed font-medium opacity-80">
+                          {ep.overview || "No description available for this episode."}
+                        </p>
+                        <div className="flex items-center gap-4 mt-3">
+                          <span className="text-[10px] font-black text-text-muted flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded-md">
+                            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                            {ep.vote_average?.toFixed(1) || 'N/A'}
+                          </span>
+                          <span className="text-[10px] font-black text-text-muted bg-white/5 px-2 py-0.5 rounded-md uppercase tracking-tighter">
+                            {ep.runtime ? `${ep.runtime} MIN` : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {/* Mobile Server Selector */}
-      <div className="md:hidden h-14 px-4 flex items-center gap-2 overflow-x-auto bg-bg-primary border-t border-white/5 scrollbar-hide">
-        <Server className="w-4 h-4 text-text-muted flex-shrink-0" />
-        {SOURCES.map((server, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActiveServer(idx)}
-            className={`px-4 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-all border flex-shrink-0 ${
-              activeServer === idx
-                ? 'bg-accent-red border-accent-red text-white'
-                : 'bg-bg-secondary border-white/10 text-text-secondary'
-            }`}
-          >
-            {server.name}
-          </button>
-        ))}
-      </div>
     </motion.div>
   );
 };
+
+const Star = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+  </svg>
+);

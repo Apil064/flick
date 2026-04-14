@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MovieCard } from './MovieCard';
-import { motion } from 'motion/react';
 
 interface CarouselProps {
   title: string;
@@ -14,6 +13,29 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -37,13 +59,36 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="relative group/carousel py-6 px-6 md:px-16 overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white/90">{title}</h2>
-        <button className="text-sm font-medium text-accent-red hover:underline">See All</button>
+    <div ref={containerRef} className="relative group/carousel py-6 px-6 md:px-16 overflow-hidden">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl md:text-3xl font-black tracking-tighter uppercase italic text-white/90">{title}</h2>
+        <button className="text-xs font-black uppercase tracking-widest text-accent-red hover:text-white transition-colors">See All</button>
       </div>
 
       <div className="relative">
@@ -59,9 +104,14 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          className={`flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
-          {items.map((item) => (
+          {isVisible && items.map((item) => (
             <div key={item.id} className="snap-start flex-shrink-0">
               <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
             </div>

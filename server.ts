@@ -32,6 +32,10 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // Clerk Auth Middleware
+  const { authMiddleware } = await import("./src/middleware/auth.middleware");
+  app.use(authMiddleware);
+
   // Rate Limiting
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -96,9 +100,19 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+    
+    // Check DB Connection
+    try {
+      const { query } = await import("./src/lib/db");
+      await query("SELECT 1");
+      console.log("✅ Database connection successful");
+    } catch (err: any) {
+      console.error("⚠️ Database connection failed. Watchlist and History features may not work.");
+      console.error("   Error:", err.message);
+    }
   });
 }
 

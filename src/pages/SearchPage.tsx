@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, X, Star, Play } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useMovieSearch, useTrending } from '../hooks/useMovies';
+import { MovieDetail } from './MovieDetail';
 import debounce from 'lodash/debounce';
 
 interface SearchPageProps {
@@ -11,8 +12,16 @@ interface SearchPageProps {
 export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [detailType, setDetailType] = useState<'movie' | 'tv'>('movie');
+
   const { data: searchResults, isLoading } = useMovieSearch(debouncedQuery);
   const { data: trending } = useTrending('all');
+
+  const handleItemClick = (item: any) => {
+    setSelectedItem(item);
+    setDetailType(item.media_type === 'tv' ? 'tv' : 'movie');
+  };
 
   const updateQuery = useCallback(
     debounce((q: string) => setDebouncedQuery(q), 300),
@@ -40,22 +49,22 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
     >
       <div className="p-6 md:p-16 flex flex-col h-full">
         <div className="flex items-center justify-between mb-12">
-          <div className="flex-1 max-w-4xl relative">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-8 h-8 text-text-muted" />
+          <div className="flex-1 max-w-lg relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <input
               autoFocus
               type="text"
-              placeholder="Search movies, TV shows, actors..."
+              placeholder="Search movies, TV shows..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-bg-secondary/50 border-b-2 border-white/10 px-20 py-6 text-2xl md:text-4xl font-bold focus:outline-none focus:border-accent-red transition-colors placeholder:text-text-muted"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-12 py-3 text-base font-medium focus:outline-none focus:border-accent-red/50 focus:bg-white/10 transition-all placeholder:text-text-muted shadow-xl"
             />
           </div>
           <button
             onClick={onClose}
-            className="ml-8 p-4 hover:bg-white/10 rounded-full transition-colors"
+            className="ml-4 p-2 hover:bg-white/10 rounded-full transition-colors border border-white/5"
           >
-            <X className="w-10 h-10" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -70,9 +79,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
                   <div
                     key={item.id}
                     className="group cursor-pointer space-y-3"
-                    onClick={() => {
-                      // Open detail modal logic
-                    }}
+                    onClick={() => handleItemClick(item)}
                   >
                     <div className="aspect-[2/3] rounded-xl overflow-hidden relative">
                       <img
@@ -103,9 +110,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
                   <div
                     key={item.id}
                     className="group cursor-pointer space-y-3"
-                    onClick={() => {
-                      // Open detail modal logic
-                    }}
+                    onClick={() => handleItemClick(item)}
                   >
                     <div className="aspect-[2/3] rounded-xl overflow-hidden relative bg-bg-secondary">
                       {item.poster_path ? (
@@ -141,6 +146,21 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
           )}
         </div>
       </div>
+
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {selectedItem && (
+          <MovieDetail
+            item={selectedItem}
+            type={detailType}
+            onClose={() => setSelectedItem(null)}
+            onItemClick={(item, type) => {
+              setSelectedItem(item);
+              setDetailType(type);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

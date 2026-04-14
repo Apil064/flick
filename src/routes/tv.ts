@@ -75,4 +75,13 @@ router.get('/:id/similar', async (req, res) => {
   }
 });
 
+router.get('/:id/season/:seasonNumber', async (req, res) => {
+  try {
+    const data = await tmdbService.getSeasonDetails(req.params.id, req.params.seasonNumber);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch season details' });
+  }
+});
+
 export default router;

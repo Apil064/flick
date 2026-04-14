@@ -59,6 +59,36 @@ function App() {
       <ClerkProvider 
         publishableKey={CLERK_PUBLISHABLE_KEY}
         afterSignOutUrl="/"
+        appearance={{
+          baseTheme: undefined, // We'll use variables for a custom dark look
+          variables: {
+            colorPrimary: '#e50914',
+            colorBackground: '#0a0a0a',
+            colorText: 'white',
+            colorTextSecondary: '#a3a3a3',
+            colorInputBackground: '#171717',
+            colorInputText: 'white',
+            borderRadius: '1rem',
+          },
+          elements: {
+            card: 'bg-bg-primary border border-white/10 shadow-2xl',
+            headerTitle: 'text-2xl font-black tracking-tighter uppercase italic text-white',
+            headerSubtitle: 'text-text-secondary',
+            socialButtonsBlockButton: 'bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white',
+            socialButtonsBlockButtonText: 'font-bold text-white',
+            formButtonPrimary: 'bg-accent-red hover:bg-red-700 transition-all font-bold uppercase tracking-widest text-xs py-3 text-white',
+            footerActionLink: 'text-accent-red hover:text-red-400 font-bold',
+            identityPreviewText: 'text-white font-medium',
+            identityPreviewEditButtonIcon: 'text-accent-red',
+            formLabel: 'text-white font-bold uppercase tracking-widest text-[10px] mb-2',
+            formFieldInput: 'bg-bg-secondary border-white/10 text-white focus:border-accent-red transition-all',
+            footerActionText: 'text-text-secondary',
+            dividerText: 'text-text-muted uppercase text-[10px] font-black',
+            dividerLine: 'bg-white/10',
+            formFieldSuccessText: 'text-green-500',
+            formFieldErrorText: 'text-accent-red',
+          }
+        }}
       >
         <QueryClientProvider client={queryClient}>
           <Router>

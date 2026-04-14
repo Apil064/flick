@@ -74,6 +74,20 @@ const getTmdb = () => {
   });
 };
 
+const mapResult = (m: any) => ({
+  id: m.id,
+  title: m.title || m.name,
+  description: m.overview,
+  poster_url: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+  backdrop_url: m.backdrop_path ? `https://image.tmdb.org/t/p/original${m.backdrop_path}` : null,
+  genre: m.genre_ids,
+  rating: m.vote_average,
+  release_year: (m.release_date || m.first_air_date || '').split('-')[0],
+  popularity_score: m.popularity,
+  created_at: new Date().toISOString(),
+  media_type: m.media_type || (m.title ? 'movie' : 'tv')
+});
+
 export const tmdbService = {
   async getTrending(type: 'movie' | 'tv' | 'all' = 'all') {
     const cacheKey = `trending_${type}`;
@@ -86,7 +100,7 @@ export const tmdbService = {
     try {
       const tmdb = getTmdb();
       const { data } = await tmdb.get(`/trending/${type}/week`);
-      const results = data.results || [];
+      const results = (data.results || []).map(mapResult);
       if (results.length > 0) {
         await cache.set(cacheKey, results, 3600); // 1 hour
       }
@@ -108,7 +122,7 @@ export const tmdbService = {
     try {
       const tmdb = getTmdb();
       const { data } = await tmdb.get(`/${type}/popular`);
-      const results = data.results || [];
+      const results = (data.results || []).map(mapResult);
       if (results.length > 0) {
         await cache.set(cacheKey, results, 3600); // 1 hour
       }
@@ -123,7 +137,7 @@ export const tmdbService = {
     try {
       const tmdb = getTmdb();
       const { data } = await tmdb.get(`/${type}/top_rated`);
-      return data.results || [];
+      return (data.results || []).map(mapResult);
     } catch (error: any) {
       console.error(`❌ TMDB getTopRated (${type}) error:`, error.response?.data || error.message);
       throw error;
@@ -134,7 +148,7 @@ export const tmdbService = {
     try {
       const tmdb = getTmdb();
       const { data } = await tmdb.get('/movie/now_playing');
-      return data.results || [];
+      return (data.results || []).map(mapResult);
     } catch (error: any) {
       console.error('❌ TMDB getNowPlaying error:', error.response?.data || error.message);
       throw error;
@@ -145,7 +159,7 @@ export const tmdbService = {
     try {
       const tmdb = getTmdb();
       const { data } = await tmdb.get('/tv/on_the_air');
-      return data.results || [];
+      return (data.results || []).map(mapResult);
     } catch (error: any) {
       console.error('❌ TMDB getOnAir error:', error.response?.data || error.message);
       throw error;
@@ -162,8 +176,21 @@ export const tmdbService = {
       const { data } = await tmdb.get(`/${type}/${id}`, {
         params: { append_to_response: 'credits,videos,similar,recommendations' }
       });
-      await cache.set(cacheKey, data, 86400); // 24 hours
-      return data;
+      
+      const mapped = {
+        ...mapResult(data),
+        credits: data.credits,
+        videos: data.videos,
+        similar: (data.similar?.results || []).map(mapResult),
+        recommendations: (data.recommendations?.results || []).map(mapResult),
+        seasons: data.seasons,
+        runtime: data.runtime,
+        tagline: data.tagline,
+        genres: data.genres
+      };
+
+      await cache.set(cacheKey, mapped, 86400); // 24 hours
+      return mapped;
     } catch (error: any) {
       console.error(`❌ TMDB getDetails (${type}, ${id}) error:`, error.response?.data || error.message);
       throw error;
@@ -185,7 +212,7 @@ export const tmdbService = {
     try {
       const tmdb = getTmdb();
       const { data } = await tmdb.get(`/${type}/${id}/similar`);
-      return data.results || [];
+      return (data.results || []).map(mapResult);
     } catch (error: any) {
       console.error(`❌ TMDB getSimilar (${type}, ${id}) error:`, error.response?.data || error.message);
       throw error;
@@ -196,7 +223,7 @@ export const tmdbService = {
     try {
       const tmdb = getTmdb();
       const { data } = await tmdb.get(`/${type}/${id}/recommendations`);
-      return data.results || [];
+      return (data.results || []).map(mapResult);
     } catch (error: any) {
       console.error(`❌ TMDB getRecommendations (${type}, ${id}) error:`, error.response?.data || error.message);
       throw error;
@@ -220,7 +247,10 @@ export const tmdbService = {
       const { data } = await tmdb.get('/search/multi', {
         params: { query, page }
       });
-      return data;
+      return {
+        ...data,
+        results: (data.results || []).map(mapResult)
+      };
     } catch (error: any) {
       console.error(`❌ TMDB searchMulti (${query}) error:`, error.response?.data || error.message);
       throw error;
@@ -233,9 +263,26 @@ export const tmdbService = {
       const { data } = await tmdb.get(`/discover/${type}`, {
         params: { with_genres: genreId }
       });
-      return data.results || [];
+      return (data.results || []).map(mapResult);
     } catch (error: any) {
       console.error(`❌ TMDB getByGenre (${type}, ${genreId}) error:`, error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  async getRecent() {
+    try {
+      const tmdb = getTmdb();
+      const { data } = await tmdb.get('/discover/movie', {
+        params: { 
+          sort_by: 'release_date.desc',
+          'release_date.lte': new Date().toISOString().split('T')[0],
+          with_release_type: '2|3'
+        }
+      });
+      return (data.results || []).map(mapResult);
+    } catch (error: any) {
+      console.error('❌ TMDB getRecent error:', error.response?.data || error.message);
       throw error;
     }
   }
