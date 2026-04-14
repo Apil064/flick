@@ -72,8 +72,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const tvSuffix = type === 'tv' ? `/${currentSeason}/${currentEpisode}` : '';
   // Some players support ?start= or #t=
   const videoUrl = type === 'movie'
-  ? `https://vidking.net/embed/movie/${tmdbId}`
-  : `https://vidking.net/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}`
+  ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
+  : `https://vidking.net/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?color=E50914`
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -153,7 +153,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
           className="w-full h-full border-none"
           allowFullScreen
           allow="autoplay; encrypted-media; fullscreen"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen"
           title="Video Player"
         />
 
