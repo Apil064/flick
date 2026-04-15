@@ -75,6 +75,9 @@ router.post('/progress', async (req, res) => {
     const userId = req.auth.userId;
     const { tmdb_id, media_type, title, poster_path, backdrop_path, season, episode, progress_seconds, duration_seconds } = req.body;
     
+    const s = season || 0;
+    const e = episode || 0;
+
     await query(
       `INSERT INTO watch_history (
         user_id, tmdb_id, media_type, title, poster_path, backdrop_path, season, episode, progress_seconds, duration_seconds, last_watched
@@ -83,7 +86,7 @@ router.post('/progress', async (req, res) => {
         progress_seconds = EXCLUDED.progress_seconds,
         duration_seconds = EXCLUDED.duration_seconds,
         last_watched = NOW()`,
-      [userId, tmdb_id, media_type, title, poster_path, backdrop_path, season, episode, progress_seconds, duration_seconds]
+      [userId, tmdb_id, media_type, title, poster_path, backdrop_path, s, e, progress_seconds, duration_seconds]
     );
     res.status(201).json({ success: true });
   } catch (error: any) {

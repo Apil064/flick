@@ -130,7 +130,15 @@ export const useWatchlist = () => {
   const { userId } = useAuth();
   return useQuery({
     queryKey: ['watchlist'],
-    queryFn: () => API.get('/user/watchlist').then(r => r.data),
+    queryFn: async () => {
+      const response = await API.get('/user/watchlist');
+      return response.data.map((item: any) => ({
+        ...item,
+        id: item.tmdb_id,
+        poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+        backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
+      }));
+    },
     enabled: !!userId,
   });
 };
@@ -142,7 +150,15 @@ export const useAddToWatchlist = () => {
     onMutate: async (newItem) => {
       await queryClient.cancelQueries({ queryKey: ['watchlist'] });
       const previousWatchlist = queryClient.getQueryData(['watchlist']);
-      queryClient.setQueryData(['watchlist'], (old: any) => [...(old || []), { ...newItem, id: Date.now() }]);
+      queryClient.setQueryData(['watchlist'], (old: any) => [
+        ...(old || []), 
+        { 
+          ...newItem, 
+          id: newItem.tmdb_id,
+          poster_url: newItem.poster_path ? `https://image.tmdb.org/t/p/w500${newItem.poster_path}` : null,
+          backdrop_url: newItem.backdrop_path ? `https://image.tmdb.org/t/p/original${newItem.backdrop_path}` : null,
+        }
+      ]);
       return { previousWatchlist };
     },
     onError: (err, newItem, context) => {
@@ -179,7 +195,15 @@ export const useContinueWatching = () => {
   const { userId } = useAuth();
   return useQuery({
     queryKey: ['continue-watching'],
-    queryFn: () => API.get('/user/continue-watching').then(r => r.data),
+    queryFn: async () => {
+      const response = await API.get('/user/continue-watching');
+      return response.data.map((item: any) => ({
+        ...item,
+        id: item.tmdb_id,
+        poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+        backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
+      }));
+    },
     enabled: !!userId,
   });
 };
@@ -188,7 +212,15 @@ export const useWatchHistory = () => {
   const { userId } = useAuth();
   return useQuery({
     queryKey: ['watch-history'],
-    queryFn: () => API.get('/user/history').then(r => r.data),
+    queryFn: async () => {
+      const response = await API.get('/user/history');
+      return response.data.map((item: any) => ({
+        ...item,
+        id: item.tmdb_id,
+        poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+        backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
+      }));
+    },
     enabled: !!userId,
   });
 };

@@ -25,10 +25,10 @@ async function initDb() {
         title TEXT NOT NULL,
         poster_path TEXT,
         backdrop_path TEXT,
-        season INTEGER,
-        episode INTEGER,
-        progress_seconds INTEGER,
-        duration_seconds INTEGER,
+        season INTEGER DEFAULT 0,
+        episode INTEGER DEFAULT 0,
+        progress_seconds INTEGER DEFAULT 0,
+        duration_seconds INTEGER DEFAULT 0,
         last_watched TIMESTAMP DEFAULT NOW(),
         UNIQUE(user_id, tmdb_id, season, episode)
       );

@@ -102,7 +102,7 @@ export const WatchHistory: React.FC = () => {
               >
                 <div className="aspect-video relative overflow-hidden">
                   <img
-                    src={item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : `https://image.tmdb.org/t/p/w780${item.poster_path}`}
+                    src={item.backdrop_url || item.poster_url}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"

@@ -57,10 +57,7 @@ export const Watchlist: React.FC = () => {
           {watchlist.map((item: any) => (
             <div key={item.id} className="relative group">
               <MovieCard
-                item={{
-                  ...item,
-                  id: item.tmdb_id // Ensure MovieCard uses tmdb_id for comparison
-                }}
+                item={item}
                 type={item.media_type}
                 onClick={() => setSelectedItem(item)}
               />

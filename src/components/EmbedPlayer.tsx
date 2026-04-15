@@ -66,7 +66,10 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason]);
 
   useEffect(() => {
-    const duration = (details?.runtime || 120) * 60;
+    const duration = type === 'movie' 
+      ? (details?.runtime || 120) * 60 
+      : (details?.episode_run_time?.[0] || 45) * 60;
+
     const saveInterval = setInterval(() => {
       saveProgress({
         tmdb_id: tmdbId,
@@ -74,28 +77,35 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         title: title,
         poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
         backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-        season: type === 'tv' ? currentSeason : null,
-        episode: type === 'tv' ? currentEpisode : null,
+        season: type === 'tv' ? currentSeason : 0,
+        episode: type === 'tv' ? currentEpisode : 0,
         progress_seconds: localProgress,
         duration_seconds: duration
       });
     }, 30000);
 
-    return () => {
-      clearInterval(saveInterval);
+    const handleBeforeUnload = () => {
       saveProgress({
         tmdb_id: tmdbId,
         media_type: type,
         title: title,
         poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
         backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-        season: type === 'tv' ? currentSeason : null,
-        episode: type === 'tv' ? currentEpisode : null,
+        season: type === 'tv' ? currentSeason : 0,
+        episode: type === 'tv' ? currentEpisode : 0,
         progress_seconds: localProgress,
         duration_seconds: duration
       });
     };
-  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, localProgress]);
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(saveInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload();
+    };
+  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, details?.episode_run_time, localProgress]);
 
   const videoUrl = type === 'movie'
     ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
