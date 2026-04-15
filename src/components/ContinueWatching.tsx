@@ -51,7 +51,12 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
                 </div>
               </div>
               <div className="space-y-1">
-                <h3 className="font-bold truncate">{item.title}</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold truncate text-sm">{item.title}</h3>
+                  <span className="text-[10px] font-bold text-text-secondary">
+                    {Math.max(0, Math.floor((item.duration_seconds - item.progress_seconds) / 60))}m left
+                  </span>
+                </div>
                 <p className="text-[10px] text-text-secondary font-black uppercase tracking-widest">
                   {item.media_type === 'tv' ? `S${item.season} E${item.episode}` : 'Movie'}
                 </p>

@@ -99,6 +99,15 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+router.get('/:id/images', async (req, res) => {
+  try {
+    const data = await tmdbService.getImages('movie', req.params.id);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch movie images' });
+  }
+});
+
 router.get('/:id/credits', async (req, res) => {
   try {
     const data = await tmdbService.getCredits('movie', req.params.id);

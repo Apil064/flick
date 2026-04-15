@@ -8,6 +8,7 @@ import { Movies } from './pages/Movies';
 import { TVShows } from './pages/TVShows';
 import { NewAndPopular } from './pages/NewAndPopular';
 import { Watchlist } from './pages/Watchlist';
+import { WatchHistory } from './pages/WatchHistory';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const queryClient = new QueryClient({
@@ -101,6 +102,7 @@ function App() {
                   <Route path="/tv" element={<TVShows />} />
                   <Route path="/new" element={<NewAndPopular />} />
                   <Route path="/watchlist" element={<Watchlist />} />
+                  <Route path="/history" element={<WatchHistory />} />
                 </Routes>
               </main>
               

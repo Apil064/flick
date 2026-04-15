@@ -53,11 +53,12 @@ router.get('/continue-watching', async (req, res) => {
   try {
     // @ts-ignore
     const userId = req.auth.userId;
-    // Filter for progress between 5% and 95%
+    // Filter for progress between 5% and 90%
     const result = await query(
       `SELECT * FROM watch_history 
        WHERE user_id = $1 
-       AND (progress_seconds::float / NULLIF(duration_seconds, 0)) BETWEEN 0.05 AND 0.95
+       AND duration_seconds > 0
+       AND (progress_seconds::float / duration_seconds) BETWEEN 0.05 AND 0.90
        ORDER BY last_watched DESC`, 
       [userId]
     );
@@ -90,6 +91,48 @@ router.post('/progress', async (req, res) => {
   } catch (error: any) {
     console.error('❌ Failed to save progress:', error.message);
     res.status(500).json({ error: 'Failed to save progress' });
+  }
+});
+
+router.get('/history', async (req, res) => {
+  try {
+    // @ts-ignore
+    const userId = req.auth.userId;
+    const result = await query(
+      'SELECT * FROM watch_history WHERE user_id = $1 ORDER BY last_watched DESC',
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch watch history' });
+  }
+});
+
+router.delete('/history/:tmdbId', async (req, res) => {
+  try {
+    // @ts-ignore
+    const userId = req.auth.userId;
+    await query(
+      'DELETE FROM watch_history WHERE user_id = $1 AND tmdb_id = $2',
+      [userId, req.params.tmdbId]
+    );
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to remove from history' });
+  }
+});
+
+router.delete('/history', async (req, res) => {
+  try {
+    // @ts-ignore
+    const userId = req.auth.userId;
+    await query(
+      'DELETE FROM watch_history WHERE user_id = $1',
+      [userId]
+    );
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to clear history' });
   }
 });
 

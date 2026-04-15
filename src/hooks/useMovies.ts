@@ -44,6 +44,12 @@ export const useMovieDetails = (type: 'movie' | 'tv', id: string) => useQuery({
   enabled: !!id,
 });
 
+export const useMovieImages = (type: 'movie' | 'tv', id: string) => useQuery({
+  queryKey: ['images', type, id],
+  queryFn: () => API.get(`/${type === 'movie' ? 'movies' : 'tv'}/${id}/images`).then(r => r.data),
+  enabled: !!id,
+});
+
 export const useMovieCredits = (type: 'movie' | 'tv', id: string) => useQuery({
   queryKey: ['credits', type, id],
   queryFn: () => API.get(`/${type === 'movie' ? 'movies' : 'tv'}/${id}/credits`).then(r => r.data),
@@ -129,6 +135,33 @@ export const useContinueWatching = () => useQuery({
   queryKey: ['continue-watching'],
   queryFn: () => API.get('/user/continue-watching').then(r => r.data),
 });
+
+export const useWatchHistory = () => useQuery({
+  queryKey: ['watch-history'],
+  queryFn: () => API.get('/user/history').then(r => r.data),
+});
+
+export const useRemoveFromHistory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tmdbId: string) => API.delete(`/user/history/${tmdbId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watch-history'] });
+      queryClient.invalidateQueries({ queryKey: ['continue-watching'] });
+    },
+  });
+};
+
+export const useClearHistory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => API.delete('/user/history'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['watch-history'] });
+      queryClient.invalidateQueries({ queryKey: ['continue-watching'] });
+    },
+  });
+};
 
 export const useSaveProgress = () => {
   const queryClient = useQueryClient();

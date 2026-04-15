@@ -111,7 +111,7 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
           className={`flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
-          {isVisible && items.map((item) => (
+          {items.map((item) => (
             <div key={item.id} className="snap-start flex-shrink-0">
               <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
             </div>

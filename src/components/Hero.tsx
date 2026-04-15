@@ -1,98 +1,130 @@
-import React from 'react';
-import { Play, Info, Plus, Download } from 'lucide-react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { Play, Info, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useMovieImages, useMovieDetails } from '../hooks/useMovies';
 
 interface HeroProps {
-  movie: any;
-  onPlay: () => void;
-  onInfo: () => void;
-  onDownload: () => void;
+  items: any[];
+  onItemClick: (item: any, type: 'movie' | 'tv') => void;
 }
 
-export function Hero({ movie, onPlay, onInfo, onDownload }: HeroProps) {
-  if (!movie) return <div className="h-[85vh] bg-zinc-900 animate-pulse" />;
+export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
+  const [index, setIndex] = useState(0);
+  const currentItem = items?.[index];
+  const type = currentItem?.media_type || 'movie';
+  
+  const { data: images } = useMovieImages(type, currentItem?.id?.toString());
+  const { data: details } = useMovieDetails(type, currentItem?.id?.toString());
 
-  const backdrop = `https://image.tmdb.org/t/p/original${movie.backdrop_path}`;
-  const title = movie.title || movie.name;
+  useEffect(() => {
+    if (!items || items.length === 0) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % Math.min(items.length, 10));
+    }, 7000);
+    return () => clearInterval(interval);
+  }, [items]);
+
+  if (!currentItem) return null;
+
+  const logo = images?.logos?.find((l: any) => l.iso_639_1 === 'en') || images?.logos?.[0];
+  const logoUrl = logo ? `https://image.tmdb.org/t/p/w500${logo.file_path}` : null;
 
   return (
-    <div className="relative h-[85vh] w-full overflow-hidden">
-      <div className="absolute inset-0">
-        <img
-          src={backdrop}
-          alt={title}
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
-      </div>
-
-      <div className="relative h-full flex flex-col justify-center px-6 md:px-16 max-w-3xl gap-6">
+    <div className="relative h-[85vh] md:h-screen w-full overflow-hidden">
+      <AnimatePresence mode="wait">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          key={currentItem.id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1 }}
+          className="absolute inset-0"
         >
-          <div className="flex items-center gap-3 mb-4">
-            <span className="bg-red-600/20 text-red-500 text-xs font-bold px-2 py-1 rounded border border-red-500/30 uppercase tracking-widest">
-              Flick Original
+          <img
+            src={currentItem.backdrop_url}
+            alt={currentItem.title}
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 hero-gradient" />
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-16 pt-20">
+        <motion.div
+          key={currentItem.id}
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.8 }}
+          className="max-w-3xl space-y-6"
+        >
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1 bg-accent-red text-[10px] font-black uppercase rounded tracking-widest">
+              Trending Now
             </span>
-            <div className="flex items-center gap-1 text-yellow-500">
-              <span className="text-sm font-bold">{movie.vote_average?.toFixed(1)}</span>
-              <span className="text-xs text-zinc-400">/ 10</span>
-            </div>
+            <span className="flex items-center gap-1 text-yellow-500 font-bold text-sm">
+              <Star className="w-4 h-4 fill-yellow-500" />
+              {currentItem.rating?.toFixed(1)}
+            </span>
+            <span className="text-text-secondary text-sm font-bold">{currentItem.release_year}</span>
           </div>
-          
-          <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tighter leading-tight uppercase">
-            {title}
-          </h1>
-          
-          <p className="text-zinc-300 text-lg line-clamp-3 max-w-xl mb-8 leading-relaxed">
-            {movie.overview}
+
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt={currentItem.title} 
+              className="h-24 md:h-40 object-contain drop-shadow-2xl"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-[0.95] text-shadow-lg text-white">
+              {currentItem.title}
+            </h1>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            {details?.genres?.slice(0, 3).map((g: any) => (
+              <span key={g.id} className="text-xs font-bold text-text-secondary uppercase tracking-widest">
+                {g.name}
+              </span>
+            ))}
+          </div>
+
+          <p className="text-sm md:text-base text-text-secondary font-medium max-w-lg line-clamp-3 text-shadow-lg opacity-80">
+            {currentItem.description}
           </p>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onPlay}
-              className="px-8 py-4 bg-white text-black rounded-xl font-bold flex items-center gap-2 shadow-xl hover:bg-zinc-200 transition-colors"
+          <div className="flex flex-wrap gap-3 pt-4">
+            <button 
+              onClick={() => onItemClick(currentItem, type)}
+              className="px-8 py-3 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group shadow-lg"
             >
-              <Play className="w-6 h-6 fill-black" />
-              Watch Now
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onDownload}
-              className="px-8 py-4 bg-red-600 text-white rounded-xl font-bold flex items-center gap-2 shadow-xl hover:bg-red-700 transition-colors"
+              <Play className="w-5 h-5 fill-black" />
+              <span className="tracking-tighter text-sm uppercase">PLAY NOW</span>
+            </button>
+            <button 
+              onClick={() => onItemClick(currentItem, type)}
+              className="px-8 py-3 bg-bg-secondary/40 backdrop-blur-xl text-white font-black rounded-full hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center gap-2 shadow-lg"
             >
-              <Download className="w-6 h-6" />
-              Download
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={onInfo}
-              className="px-8 py-4 bg-white/10 text-white rounded-xl font-bold flex items-center gap-2 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors"
-            >
-              <Info className="w-6 h-6" />
-              More Info
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-14 h-14 bg-white/10 text-white rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors"
-            >
-              <Plus className="w-6 h-6" />
-            </motion.button>
+              <Info className="w-5 h-5" />
+              <span className="tracking-tighter text-sm uppercase">MORE INFO</span>
+            </button>
           </div>
         </motion.div>
       </div>
+
+      {/* Hero Indicators */}
+      <div className="absolute bottom-32 right-6 md:right-16 flex gap-2">
+        {items?.slice(0, 10).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIndex(i)}
+            className={`h-1.5 transition-all duration-500 rounded-full ${
+              index === i ? 'w-10 bg-accent-red' : 'w-4 bg-white/20'
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
-}
+};

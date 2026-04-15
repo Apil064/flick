@@ -36,6 +36,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   }, [tmdbId, currentSeason, currentEpisode]);
 
   useEffect(() => {
+    const duration = (details?.runtime || 120) * 60;
     const saveInterval = setInterval(() => {
       saveProgress({
         tmdb_id: tmdbId,
@@ -46,7 +47,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         season: type === 'tv' ? currentSeason : null,
         episode: type === 'tv' ? currentEpisode : null,
         progress_seconds: localProgress,
-        duration_seconds: 3600
+        duration_seconds: duration
       });
     }, 30000);
 
@@ -61,10 +62,10 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         season: type === 'tv' ? currentSeason : null,
         episode: type === 'tv' ? currentEpisode : null,
         progress_seconds: localProgress,
-        duration_seconds: 3600
+        duration_seconds: duration
       });
     };
-  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, localProgress]);
+  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, localProgress]);
 
   const videoUrl = type === 'movie'
     ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`

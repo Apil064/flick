@@ -78,7 +78,7 @@ const mapResult = (m: any) => ({
   id: m.id,
   title: m.title || m.name,
   description: m.overview,
-  poster_url: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+  poster_url: (m.poster_path || m.profile_path) ? `https://image.tmdb.org/t/p/w500${m.poster_path || m.profile_path}` : null,
   backdrop_url: m.backdrop_path ? `https://image.tmdb.org/t/p/original${m.backdrop_path}` : null,
   genre: m.genre_ids,
   rating: m.vote_average,
@@ -227,6 +227,19 @@ export const tmdbService = {
     } catch (error: any) {
       console.error(`❌ TMDB getRecommendations (${type}, ${id}) error:`, error.response?.data || error.message);
       throw error;
+    }
+  },
+
+  async getImages(type: 'movie' | 'tv', id: string) {
+    try {
+      const tmdb = getTmdb();
+      const { data } = await tmdb.get(`/${type}/${id}/images`, {
+        params: { include_image_language: 'en,null' }
+      });
+      return data;
+    } catch (error: any) {
+      console.error(`❌ TMDB getImages (${type}, ${id}) error:`, error.response?.data || error.message);
+      return { logos: [], backdrops: [], posters: [] };
     }
   },
 
