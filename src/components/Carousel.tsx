@@ -14,6 +14,7 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,6 +33,25 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
     return () => window.removeEventListener('resize', checkScroll);
   }, [items]);
 
+  // Auto-scroll logic
+  useEffect(() => {
+    if (isHovered || isDragging || !scrollRef.current || items.length === 0) return;
+
+    const interval = setInterval(() => {
+      if (scrollRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+        // If we're at the end, scroll back to start, otherwise scroll right
+        if (scrollLeft >= scrollWidth - clientWidth - 10) {
+          scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isHovered, isDragging, items.length]);
+
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const { clientWidth } = scrollRef.current;
@@ -40,19 +60,12 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
     }
   };
 
+  // Mouse Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     setIsDragging(true);
     setStartX(e.pageX - scrollRef.current.offsetLeft);
     setScrollLeft(scrollRef.current.scrollLeft);
-  };
-
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -63,10 +76,37 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
+  // Touch Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.touches[0].pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    const x = e.touches[0].pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleEnd = () => {
+    setIsDragging(false);
+  };
+
   if (!items || items.length === 0) return null;
 
   return (
-    <div ref={containerRef} className="relative group/carousel py-6 px-6 md:px-16 overflow-hidden">
+    <div 
+      ref={containerRef} 
+      className="relative group/carousel py-6 px-6 md:px-16 overflow-hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setIsDragging(false);
+      }}
+    >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl md:text-3xl font-black tracking-tighter uppercase italic text-white/90">{title}</h2>
         <button className="text-xs font-black uppercase tracking-widest text-accent-red hover:text-white transition-colors">See All</button>
@@ -86,9 +126,11 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
           ref={scrollRef}
           onScroll={checkScroll}
           onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseUp={handleMouseUp}
+          onMouseUp={handleEnd}
           onMouseMove={handleMouseMove}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleEnd}
           className={`flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
