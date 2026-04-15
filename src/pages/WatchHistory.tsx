@@ -5,8 +5,10 @@ import { useWatchHistory, useRemoveFromHistory, useClearHistory } from '../hooks
 import { MovieDetail } from './MovieDetail';
 import { EmbedPlayer } from '../components/EmbedPlayer';
 import { Link } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 
 export const WatchHistory: React.FC = () => {
+  const { isSignedIn, isLoaded } = useUser();
   const { data: history, isLoading } = useWatchHistory();
   const { mutate: removeFromHistory } = useRemoveFromHistory();
   const { mutate: clearHistory } = useClearHistory();
@@ -27,10 +29,27 @@ export const WatchHistory: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (!isLoaded || isLoading) {
     return (
       <div className="min-h-screen bg-bg-primary pt-32 px-6 md:px-16 flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-accent-red border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-bg-primary pt-32 px-6 md:px-16 flex flex-col items-center justify-center">
+        <div className="max-w-md text-center space-y-6">
+          <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto">
+            <Clock className="w-10 h-10 text-text-muted" />
+          </div>
+          <h1 className="text-3xl font-black tracking-tighter uppercase italic text-white">Sign in required</h1>
+          <p className="text-text-secondary font-medium">Please sign in to view and manage your watch history across all your devices.</p>
+          <Link to="/" className="inline-block px-8 py-3 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all uppercase text-xs tracking-widest">
+            Back to Home
+          </Link>
+        </div>
       </div>
     );
   }

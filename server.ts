@@ -31,6 +31,11 @@ async function startServer() {
   }));
   app.use(cors());
   app.use(express.json());
+  
+  // Health Check - BEFORE auth middleware
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
 
   // Clerk Auth Middleware
   const { authMiddleware } = await import("./src/middleware/auth.middleware");
@@ -59,11 +64,6 @@ async function startServer() {
     } catch (error) {
       res.status(500).json({ error: "Failed to search" });
     }
-  });
-
-  // Health Check
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   // Debug TMDB

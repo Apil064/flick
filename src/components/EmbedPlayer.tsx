@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, List, Play, ChevronRight, Maximize } from 'lucide-react';
+import { X, ChevronLeft, List, Play, ChevronRight, Maximize, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
 
@@ -21,6 +21,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [currentSeason, setCurrentSeason] = useState(season);
   const [currentEpisode, setCurrentEpisode] = useState(episode);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [episodeSearch, setEpisodeSearch] = useState('');
+  const [autoNext, setAutoNext] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   
   const { data: details } = useMovieDetails(type, tmdbId);
@@ -28,12 +30,40 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const { mutate: saveProgress } = useSaveProgress();
   const [localProgress, setLocalProgress] = useState(startTime);
 
+  // Initialize localProgress correctly when startTime changes
+  useEffect(() => {
+    setLocalProgress(startTime);
+  }, [startTime, tmdbId, currentSeason, currentEpisode]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setLocalProgress(prev => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
   }, [tmdbId, currentSeason, currentEpisode]);
+
+  // Auto-next logic
+  useEffect(() => {
+    if (!autoNext || type !== 'tv' || !details || !seasonDetails) return;
+    
+    const duration = (details?.runtime || 120) * 60;
+    // If we're near the end (e.g., last 30 seconds), check for next episode
+    if (localProgress >= duration - 30 && duration > 0) {
+      const nextEp = seasonDetails.episodes.find((e: any) => e.episode_number === currentEpisode + 1);
+      if (nextEp) {
+        handleEpisodeChange(currentSeason, nextEp.episode_number);
+        setLocalProgress(0);
+      } else {
+        // Check next season
+        const nextSeason = details.seasons.find((s: any) => s.season_number === currentSeason + 1);
+        if (nextSeason) {
+          setCurrentSeason(nextSeason.season_number);
+          setCurrentEpisode(1);
+          setLocalProgress(0);
+        }
+      }
+    }
+  }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason]);
 
   useEffect(() => {
     const duration = (details?.runtime || 120) * 60;
@@ -82,7 +112,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const handleFullscreen = () => {
     if (iframeRef.current) {
       iframeRef.current.requestFullscreen().catch(() => {
-        // fallback: fullscreen the whole page
         document.documentElement.requestFullscreen();
       });
     }
@@ -91,8 +120,14 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const handleEpisodeChange = (s: number, e: number) => {
     setCurrentSeason(s);
     setCurrentEpisode(e);
+    setLocalProgress(0);
     if (window.innerWidth < 768) setShowEpisodeList(false);
   };
+
+  const filteredEpisodes = seasonDetails?.episodes?.filter((ep: any) => 
+    ep.name.toLowerCase().includes(episodeSearch.toLowerCase()) ||
+    ep.episode_number.toString() === episodeSearch
+  );
 
   return (
     <motion.div
@@ -143,7 +178,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
             </button>
           )}
 
-          {/* Custom Fullscreen Button */}
           <button
             onClick={handleFullscreen}
             className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
@@ -183,39 +217,59 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="absolute right-0 top-0 bottom-0 w-full md:w-[500px] bg-bg-primary/98 backdrop-blur-3xl border-l border-white/10 z-[60] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]"
             >
-              <div className="p-10 border-b border-white/5 flex items-center justify-between">
-                <div>
-                  <h3 className="text-3xl font-black tracking-tighter uppercase italic text-accent-red">Episodes</h3>
-                  <div className="flex items-center gap-4 mt-4">
-                    <div className="relative">
-                      <select 
-                        value={currentSeason}
-                        onChange={(e) => setCurrentSeason(Number(e.target.value))}
-                        className="appearance-none bg-bg-secondary border border-white/10 rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest outline-none focus:border-accent-red transition-all pr-12 cursor-pointer"
-                      >
-                        {details?.seasons?.filter((s: any) => s.season_number > 0).map((s: any) => (
-                          <option key={s.id} value={s.season_number}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none rotate-90" />
-                    </div>
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                      {seasonDetails?.episodes?.length || 0} Episodes Available
-                    </span>
+              <div className="p-8 border-b border-white/5 space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-black tracking-tighter uppercase italic text-accent-red">Episodes</h3>
+                  <button 
+                    onClick={() => setShowEpisodeList(false)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors border border-white/5"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+                    <input 
+                      type="text"
+                      placeholder="Search episodes..."
+                      value={episodeSearch}
+                      onChange={(e) => setEpisodeSearch(e.target.value)}
+                      className="w-full bg-bg-secondary border border-white/10 rounded-xl pl-10 pr-4 py-2 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-accent-red transition-all"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 bg-bg-secondary border border-white/10 rounded-xl px-4 py-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">Auto Next</span>
+                    <button onClick={() => setAutoNext(!autoNext)} className="text-accent-red">
+                      {autoNext ? <ToggleRight className="w-5 h-5" /> : <Toggle className="w-5 h-5 opacity-40" />}
+                    </button>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setShowEpisodeList(false)}
-                  className="p-3 hover:bg-white/10 rounded-full transition-colors border border-white/5"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <select 
+                      value={currentSeason}
+                      onChange={(e) => setCurrentSeason(Number(e.target.value))}
+                      className="appearance-none bg-bg-secondary border border-white/10 rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest outline-none focus:border-accent-red transition-all pr-12 cursor-pointer"
+                    >
+                      {details?.seasons?.filter((s: any) => s.season_number > 0).map((s: any) => (
+                        <option key={s.id} value={s.season_number}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none rotate-90" />
+                  </div>
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                    {filteredEpisodes?.length || 0} Episodes
+                  </span>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
-                {seasonDetails?.episodes?.map((ep: any) => {
+                {filteredEpisodes?.map((ep: any) => {
                   const isActive = currentEpisode === ep.episode_number;
                   return (
                     <button
@@ -239,6 +293,11 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                             <Play className="w-5 h-5 fill-white text-white" />
                           </div>
                         </div>
+                        {isActive && (
+                          <div className="absolute top-2 left-2 px-2 py-0.5 bg-accent-red rounded-md text-[8px] font-black tracking-widest uppercase shadow-lg">
+                            Watching
+                          </div>
+                        )}
                         <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/70 backdrop-blur-md rounded-lg text-[10px] font-black tracking-tighter">
                           EP {ep.episode_number}
                         </div>

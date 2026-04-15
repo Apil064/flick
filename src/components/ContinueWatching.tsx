@@ -1,22 +1,24 @@
 import React from 'react';
 import { useContinueWatching } from '../hooks/useMovies';
 import { Play } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
 
 interface ContinueWatchingProps {
   onPlay: (item: any) => void;
 }
 
 export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) => {
+  const { isSignedIn } = useUser();
   const { data: history, isLoading } = useContinueWatching();
 
-  if (isLoading || !history || history.length === 0) return null;
+  if (!isSignedIn || isLoading || !history || history.length === 0) return null;
 
   return (
     <div className="py-10 px-6 md:px-16">
       <h2 className="text-xl md:text-2xl font-black tracking-tighter uppercase italic text-white/90 mb-6">Continue Watching</h2>
       <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
         {history.map((item: any) => {
-          const progress = (item.progress_seconds / item.duration_seconds) * 100;
+          const progress = item.duration_seconds > 0 ? (item.progress_seconds / item.duration_seconds) * 100 : 0;
           return (
             <div
               key={item.id}
@@ -29,7 +31,7 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
                 episode: item.episode
               })}
             >
-              <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-bg-secondary">
+              <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-white/5 border border-white/10">
                 <img
                   src={item.backdrop_url || `https://image.tmdb.org/t/p/w780${item.backdrop_path}`}
                   alt={item.title}
@@ -37,12 +39,12 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-accent-red flex items-center justify-center scale-0 group-hover:scale-100 transition-transform">
+                  <div className="w-12 h-12 rounded-full bg-accent-red flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-xl">
                     <Play className="w-6 h-6 fill-white text-white" />
                   </div>
                 </div>
                 
-                {/* Progress Bar */}
+                {/* Progress Bar Container */}
                 <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
                   <div 
                     className="h-full bg-accent-red shadow-[0_0_10px_rgba(229,9,20,0.5)]" 

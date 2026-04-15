@@ -30,7 +30,7 @@ async function initDb() {
         progress_seconds INTEGER,
         duration_seconds INTEGER,
         last_watched TIMESTAMP DEFAULT NOW(),
-        UNIQUE(user_id, tmdb_id)
+        UNIQUE(user_id, tmdb_id, season, episode)
       );
     `);
 

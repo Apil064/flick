@@ -26,7 +26,9 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
 
   if (!currentItem) return null;
 
-  const logo = images?.logos?.find((l: any) => l.iso_639_1 === 'en') || images?.logos?.[0];
+  const logo = images?.logos?.find((l: any) => l.iso_639_1 === 'en' && l.file_path.endsWith('.png')) || 
+               images?.logos?.find((l: any) => l.iso_639_1 === 'en') || 
+               images?.logos?.[0];
   const logoUrl = logo ? `https://image.tmdb.org/t/p/w500${logo.file_path}` : null;
 
   return (
@@ -56,58 +58,58 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.8 }}
-          className="max-w-3xl space-y-6"
+          className="max-w-2xl space-y-4"
         >
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 bg-accent-red text-[10px] font-black uppercase rounded tracking-widest">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 bg-accent-red text-[9px] font-black uppercase rounded tracking-widest">
               Trending Now
             </span>
-            <span className="flex items-center gap-1 text-yellow-500 font-bold text-sm">
-              <Star className="w-4 h-4 fill-yellow-500" />
+            <span className="flex items-center gap-1 text-yellow-500 font-bold text-xs">
+              <Star className="w-3.5 h-3.5 fill-yellow-500" />
               {currentItem.rating?.toFixed(1)}
             </span>
-            <span className="text-text-secondary text-sm font-bold">{currentItem.release_year}</span>
+            <span className="text-text-secondary text-xs font-bold">{currentItem.release_year}</span>
           </div>
 
           {logoUrl ? (
             <img 
               src={logoUrl} 
               alt={currentItem.title} 
-              className="h-24 md:h-40 object-contain drop-shadow-2xl"
+              className="h-16 md:h-28 max-w-[280px] md:max-w-[380px] object-contain drop-shadow-2xl"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-[0.95] text-shadow-lg text-white">
+            <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[0.95] text-shadow-lg text-white">
               {currentItem.title}
             </h1>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-x-2.5 gap-y-1">
             {details?.genres?.slice(0, 3).map((g: any) => (
-              <span key={g.id} className="text-xs font-bold text-text-secondary uppercase tracking-widest">
+              <span key={g.id} className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">
                 {g.name}
               </span>
             ))}
           </div>
 
-          <p className="text-sm md:text-base text-text-secondary font-medium max-w-lg line-clamp-3 text-shadow-lg opacity-80">
+          <p className="text-xs md:text-sm text-text-secondary font-medium max-w-lg line-clamp-3 text-shadow-lg opacity-80 leading-relaxed">
             {currentItem.description}
           </p>
 
-          <div className="flex flex-wrap gap-3 pt-4">
+          <div className="flex flex-wrap gap-3 pt-2">
             <button 
               onClick={() => onItemClick(currentItem, type)}
-              className="px-8 py-3 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group shadow-lg"
+              className="px-6 py-2.5 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group shadow-lg"
             >
-              <Play className="w-5 h-5 fill-black" />
-              <span className="tracking-tighter text-sm uppercase">PLAY NOW</span>
+              <Play className="w-4 h-4 fill-black" />
+              <span className="tracking-tighter text-xs uppercase">PLAY NOW</span>
             </button>
             <button 
               onClick={() => onItemClick(currentItem, type)}
-              className="px-8 py-3 bg-bg-secondary/40 backdrop-blur-xl text-white font-black rounded-full hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center gap-2 shadow-lg"
+              className="px-6 py-2.5 bg-bg-secondary/40 backdrop-blur-xl text-white font-black rounded-full hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center gap-2 shadow-lg"
             >
-              <Info className="w-5 h-5" />
-              <span className="tracking-tighter text-sm uppercase">MORE INFO</span>
+              <Info className="w-4 h-4" />
+              <span className="tracking-tighter text-xs uppercase">MORE INFO</span>
             </button>
           </div>
         </motion.div>

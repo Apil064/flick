@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Info, Plus, Star, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useUser } from '@clerk/clerk-react';
 import { useTrending, usePopular, useTopRated, useByGenre, useRecent, useByGenreName } from '../hooks/useMovies';
 import { Carousel } from '../components/Carousel';
 import { MovieDetail } from './MovieDetail';
@@ -12,6 +13,7 @@ export const Home: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [detailType, setDetailType] = useState<'movie' | 'tv'>('movie');
   const [activePlayerItem, setActivePlayerItem] = useState<any>(null);
+  const { isSignedIn } = useUser();
 
   const { data: trendingMovies, isLoading: loadingTrending } = useTrending('movie');
   const { data: popularTV } = usePopular('tv');
@@ -52,7 +54,7 @@ export const Home: React.FC = () => {
 
       {/* Carousels */}
       <div className="relative z-10 -mt-12 md:-mt-24 space-y-12">
-        <ContinueWatching onPlay={handleDirectPlay} />
+        {isSignedIn && <ContinueWatching onPlay={handleDirectPlay} />}
         
         <Carousel 
           title="Trending Now" 

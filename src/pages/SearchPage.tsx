@@ -113,9 +113,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
                     onClick={() => handleItemClick(item)}
                   >
                     <div className="aspect-[2/3] rounded-xl overflow-hidden relative bg-bg-secondary">
-                      {item.poster_url ? (
+                      {item.poster_url || item.poster_path ? (
                         <img
-                          src={item.poster_url}
+                          src={item.poster_url || `https://image.tmdb.org/t/p/w500${item.poster_path}`}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           referrerPolicy="no-referrer"

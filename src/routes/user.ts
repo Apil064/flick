@@ -79,9 +79,7 @@ router.post('/progress', async (req, res) => {
       `INSERT INTO watch_history (
         user_id, tmdb_id, media_type, title, poster_path, backdrop_path, season, episode, progress_seconds, duration_seconds, last_watched
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-      ON CONFLICT (user_id, tmdb_id) DO UPDATE SET
-        season = EXCLUDED.season,
-        episode = EXCLUDED.episode,
+      ON CONFLICT (user_id, tmdb_id, season, episode) DO UPDATE SET
         progress_seconds = EXCLUDED.progress_seconds,
         duration_seconds = EXCLUDED.duration_seconds,
         last_watched = NOW()`,

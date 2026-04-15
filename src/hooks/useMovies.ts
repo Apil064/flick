@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@clerk/clerk-react';
 import { API } from '../lib/api';
 
 export const useTrending = (type: 'movie' | 'tv' | 'all' = 'movie') => useQuery({
@@ -86,10 +87,14 @@ export const useTVSeason = (tvId: string, seasonNumber: number) => useQuery({
   enabled: !!tvId && seasonNumber !== undefined,
 });
 
-export const useWatchlist = () => useQuery({
-  queryKey: ['watchlist'],
-  queryFn: () => API.get('/user/watchlist').then(r => r.data),
-});
+export const useWatchlist = () => {
+  const { userId } = useAuth();
+  return useQuery({
+    queryKey: ['watchlist'],
+    queryFn: () => API.get('/user/watchlist').then(r => r.data),
+    enabled: !!userId,
+  });
+};
 
 export const useAddToWatchlist = () => {
   const queryClient = useQueryClient();
@@ -131,15 +136,23 @@ export const useRemoveFromWatchlist = () => {
   });
 };
 
-export const useContinueWatching = () => useQuery({
-  queryKey: ['continue-watching'],
-  queryFn: () => API.get('/user/continue-watching').then(r => r.data),
-});
+export const useContinueWatching = () => {
+  const { userId } = useAuth();
+  return useQuery({
+    queryKey: ['continue-watching'],
+    queryFn: () => API.get('/user/continue-watching').then(r => r.data),
+    enabled: !!userId,
+  });
+};
 
-export const useWatchHistory = () => useQuery({
-  queryKey: ['watch-history'],
-  queryFn: () => API.get('/user/history').then(r => r.data),
-});
+export const useWatchHistory = () => {
+  const { userId } = useAuth();
+  return useQuery({
+    queryKey: ['watch-history'],
+    queryFn: () => API.get('/user/history').then(r => r.data),
+    enabled: !!userId,
+  });
+};
 
 export const useRemoveFromHistory = () => {
   const queryClient = useQueryClient();
