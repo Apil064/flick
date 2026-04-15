@@ -214,8 +214,8 @@ export const Home: React.FC = () => {
             season={activePlayerItem.season}
             episode={activePlayerItem.episode}
             title={activePlayerItem.title}
-            posterPath={activePlayerItem.poster_path}
-            backdropPath={activePlayerItem.backdrop_path}
+            posterPath={activePlayerItem.poster_path || activePlayerItem.poster_url?.replace('https://image.tmdb.org/t/p/w500', '')}
+            backdropPath={activePlayerItem.backdrop_path || activePlayerItem.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')}
             startTime={activePlayerItem.progress_seconds}
             onClose={() => setActivePlayerItem(null)}
           />

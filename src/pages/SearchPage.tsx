@@ -83,8 +83,8 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
                   >
                     <div className="aspect-[2/3] rounded-xl overflow-hidden relative">
                       <img
-                        src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
-                        alt={item.title || item.name}
+                        src={item.poster_url}
+                        alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         referrerPolicy="no-referrer"
                       />
@@ -92,7 +92,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
                         <Play className="w-10 h-10 fill-white" />
                       </div>
                     </div>
-                    <p className="font-bold truncate">{item.title || item.name}</p>
+                    <p className="font-bold truncate">{item.title}</p>
                   </div>
                 ))}
               </div>
@@ -113,10 +113,10 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
                     onClick={() => handleItemClick(item)}
                   >
                     <div className="aspect-[2/3] rounded-xl overflow-hidden relative bg-bg-secondary">
-                      {item.poster_path ? (
+                      {item.poster_url ? (
                         <img
-                          src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
-                          alt={item.title || item.name}
+                          src={item.poster_url}
+                          alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           referrerPolicy="no-referrer"
                         />
@@ -130,13 +130,13 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
                       </div>
                     </div>
                     <div>
-                      <p className="font-bold truncate">{item.title || item.name}</p>
+                      <p className="font-bold truncate">{item.title}</p>
                       <div className="flex items-center gap-2 text-[10px] text-text-secondary">
                         <span className="flex items-center gap-1 text-yellow-500">
                           <Star className="w-3 h-3 fill-yellow-500" />
-                          {item.vote_average?.toFixed(1)}
+                          {item.rating?.toFixed(1)}
                         </span>
-                        <span>{(item.release_date || item.first_air_date || '').split('-')[0]}</span>
+                        <span>{item.release_year}</span>
                       </div>
                     </div>
                   </div>

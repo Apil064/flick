@@ -20,8 +20,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
     episode: item.episode || 1,
     startTime: item.progress_seconds || 0,
     title: item.title,
-    posterPath: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-    backdropPath: item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')
+    posterPath: item.poster_path || item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+    backdropPath: item.backdrop_path || item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')
   });
   const [activeSeason, setActiveSeason] = useState(item.season || 1);
   
@@ -43,8 +43,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
       episode: e, 
       startTime: t,
       title: item.title,
-      posterPath: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-      backdropPath: item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')
+      posterPath: item.poster_path || item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+      backdropPath: item.backdrop_path || item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')
     });
     setShowPlayer(true);
   };
@@ -295,8 +295,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                       className="flex-shrink-0 w-32 aspect-[2/3] rounded-lg overflow-hidden relative group cursor-pointer"
                     >
                       <img
-                        src={`https://image.tmdb.org/t/p/w342${s.poster_path}`}
-                        alt={s.title || s.name}
+                        src={s.poster_url}
+                        alt={s.title}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />
