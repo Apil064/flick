@@ -10,15 +10,19 @@ export const API = axios.create({
 // Add auth token if available
 API.interceptors.request.use(async (config) => {
   try {
-    // Access Clerk from the window object as a fallback if needed, 
-    // but ideally we use the useAuth hook in components.
-    // However, for a global interceptor, we can use window.Clerk
-    const token = await (window as any).Clerk?.session?.getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Access Clerk from the window object safely
+    const clerk = (window as any).Clerk;
+    if (clerk?.session) {
+      const token = await clerk.session.getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
   } catch (error) {
-    console.error('Error getting Clerk token:', error);
+    // Never throw or block the request
+    console.warn('Silent error getting Clerk token:', error);
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });

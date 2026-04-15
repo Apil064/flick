@@ -4,18 +4,47 @@ import { API } from '../lib/api';
 
 export const useTrending = (type: 'movie' | 'tv' | 'all' = 'movie') => useQuery({
   queryKey: ['trending', type],
-  queryFn: () => API.get(`/${type === 'tv' ? 'tv' : 'movies'}/trending`).then(r => r.data),
-  staleTime: 1000 * 60 * 60, // 1 hour
+  queryFn: async () => {
+    try {
+      const response = await API.get(`/${type === 'tv' ? 'tv' : 'movies'}/trending`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching trending ${type}:`, error);
+      throw error;
+    }
+  },
+  staleTime: 0,
+  gcTime: 0,
 });
 
 export const usePopular = (type: 'movie' | 'tv' = 'movie') => useQuery({
   queryKey: ['popular', type],
-  queryFn: () => API.get(`/${type === 'movie' ? 'movies' : 'tv'}/popular`).then(r => r.data),
+  queryFn: async () => {
+    try {
+      const response = await API.get(`/${type === 'movie' ? 'movies' : 'tv'}/popular`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching popular ${type}:`, error);
+      throw error;
+    }
+  },
+  staleTime: 0,
+  gcTime: 0,
 });
 
 export const useTopRated = (type: 'movie' | 'tv' = 'movie') => useQuery({
   queryKey: ['top-rated', type],
-  queryFn: () => API.get(`/${type === 'movie' ? 'movies' : 'tv'}/top-rated`).then(r => r.data),
+  queryFn: async () => {
+    try {
+      const response = await API.get(`/${type === 'movie' ? 'movies' : 'tv'}/top-rated`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching top rated ${type}:`, error);
+      throw error;
+    }
+  },
+  staleTime: 0,
+  gcTime: 0,
 });
 
 export const useRecent = () => useQuery({
@@ -25,8 +54,18 @@ export const useRecent = () => useQuery({
 
 export const useByGenreName = (genreName: string) => useQuery({
   queryKey: ['genre-name', genreName],
-  queryFn: () => API.get(`/movies/by-genre?genre=${genreName}`).then(r => r.data),
+  queryFn: async () => {
+    try {
+      const response = await API.get(`/movies/by-genre?genre=${genreName}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching movies by genre ${genreName}:`, error);
+      throw error;
+    }
+  },
   enabled: !!genreName,
+  staleTime: 0,
+  gcTime: 0,
 });
 
 export const useNowPlaying = () => useQuery({

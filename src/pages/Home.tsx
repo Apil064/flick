@@ -15,7 +15,7 @@ export const Home: React.FC = () => {
   const [activePlayerItem, setActivePlayerItem] = useState<any>(null);
   const { isSignedIn } = useUser();
 
-  const { data: trendingMovies, isLoading: loadingTrending } = useTrending('movie');
+  const { data: trendingMovies, isLoading: loadingTrending, isError: trendingError } = useTrending('movie');
   const { data: popularTV } = usePopular('tv');
   const { data: popularMovies } = usePopular('movie');
   const { data: topRatedMovies } = useTopRated('movie');
@@ -40,6 +40,21 @@ export const Home: React.FC = () => {
     return (
       <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-accent-red border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (trendingError || !trendingMovies) {
+    return (
+      <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center p-6 text-center">
+        <h2 className="text-2xl font-bold mb-4">Unable to load content</h2>
+        <p className="text-text-secondary mb-8">There was an error connecting to the streaming service. Please try again later.</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all"
+        >
+          Refresh Page
+        </button>
       </div>
     );
   }

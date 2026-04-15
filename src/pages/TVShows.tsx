@@ -36,7 +36,7 @@ export const TVShows: React.FC = () => {
         {featured && (
           <div className="absolute inset-0">
             <img
-              src={`https://image.tmdb.org/t/p/original${featured.backdrop_path}`}
+              src={featured.backdrop_url}
               alt={featured.name}
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
