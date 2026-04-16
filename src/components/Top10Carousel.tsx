@@ -87,14 +87,14 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
           onMouseDown={handleMouseDown}
           onMouseUp={handleEnd}
           onMouseMove={handleMouseMove}
-          className={`flex gap-8 md:gap-12 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-10 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-12 md:gap-20 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-10 px-12 md:px-20 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {displayItems.map((item, index) => (
-            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-center pl-10 md:pl-14">
+            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end pl-12 md:pl-20">
               {/* Numeric Badge */}
-              <div className="absolute left-0 z-10 select-none pointer-events-none transition-all duration-500 group-hover/item:-translate-x-6 md:group-hover/item:-translate-x-10 group-hover/item:scale-110 origin-right">
-                <span className="text-[90px] md:text-[140px] font-black leading-none tracking-tighter transition-all duration-500"
+              <div className="absolute left-0 bottom-[-5%] z-10 select-none pointer-events-none transition-all duration-500 group-hover/item:-translate-x-8 md:group-hover/item:-translate-x-12 group-hover/item:scale-110 origin-bottom-right">
+                <span className="text-[120px] md:text-[200px] font-black leading-[0.8] tracking-tighter transition-all duration-500"
                       style={{ 
                         WebkitTextStroke: '2px #E50914',
                         color: 'transparent',
@@ -107,7 +107,7 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
                           style={{ 
                             color: '#E50914',
                             WebkitTextStroke: '0px',
-                            filter: 'drop-shadow(0 0 20px rgba(229,9,20,0.9))',
+                            filter: 'drop-shadow(0 0 25px rgba(229,9,20,1))',
                             background: 'linear-gradient(to bottom, #ff4d4d, #E50914)',
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent'
@@ -119,7 +119,7 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
               </div>
               
               <div className="relative z-20 transition-all duration-500">
-                <div className="relative rounded-lg overflow-hidden transition-all duration-500 shadow-2xl group-hover/item:shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                <div className="relative rounded-lg overflow-hidden transition-all duration-500 shadow-2xl group-hover/item:shadow-[0_0_40px_rgba(0,0,0,0.6)]">
                   <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
                 </div>
               </div>
