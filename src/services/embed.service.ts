@@ -1,59 +1,42 @@
-// src/services/embed.service.ts
-// These sources provide publicly accessible embed endpoints
-// that work without server-side scraping.
-
 export const embedService = {
-  getSources(
-    tmdbId: string,
-    type: 'movie' | 'tv',
-    season?: string,
-    episode?: string,
-    imdbId?: string
-  ) {
-    const s = season || '1';
-    const e = episode || '1';
+  getSources(tmdbId: string, type: 'movie' | 'tv', season?: string, episode?: string, imdbId?: string) {
+    const sources = [];
 
-    return [
-      {
-        name: 'VidSrc Pro',
-        url:
-          type === 'movie'
-            ? `https://vidsrc.pro/embed/movie/${tmdbId}`
-            : `https://vidsrc.pro/embed/tv/${tmdbId}/${s}/${e}`,
-        priority: 1,
-      },
-      {
-        name: 'VidSrc.to',
-        url:
-          type === 'movie'
-            ? `https://vidsrc.to/embed/movie/${tmdbId}`
-            : `https://vidsrc.to/embed/tv/${tmdbId}/${s}/${e}`,
-        priority: 2,
-      },
-      {
-        name: 'AutoEmbed',
-        url:
-          type === 'movie'
-            ? `https://autoembed.co/movie/tmdb/${tmdbId}`
-            : `https://autoembed.co/tv/tmdb/${tmdbId}-${s}-${e}`,
-        priority: 3,
-      },
-      {
-        name: '2Embed',
-        url:
-          type === 'movie'
-            ? `https://www.2embed.cc/embed/${tmdbId}`
-            : `https://www.2embed.cc/embedtv/${tmdbId}&s=${s}&e=${e}`,
-        priority: 4,
-      },
-      {
-        name: 'SmashyStream',
-        url:
-          type === 'movie'
-            ? `https://player.smashystream.com/movie.php?tmdb=${tmdbId}`
-            : `https://player.smashystream.com/tv.php?tmdb=${tmdbId}&s=${s}&e=${e}`,
-        priority: 5,
-      },
-    ];
-  },
+    // Primary: VidApi (Cineby's own)
+    const cinebyBase = 'https://player.cineby.workers.dev';
+    const cinebyUrl = type === 'movie' 
+      ? `${cinebyBase}/movie/${tmdbId}`
+      : `${cinebyBase}/tv/${tmdbId}/${season}/${episode}`;
+    
+    sources.push({
+      name: 'VidApi (Flick)',
+      url: `${cinebyUrl}?primaryColor=FF0000&secondaryColor=000000&iconColor=FFFFFF`,
+      priority: 1
+    });
+
+    // Fallbacks (using IMDB ID if available, otherwise TMDB ID)
+    const id = imdbId || tmdbId;
+
+    sources.push({
+      name: 'VidSrc To',
+      url: type === 'movie' 
+        ? `https://vidsrc.to/embed/movie/${id}`
+        : `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`,
+      priority: 2
+    });
+
+    sources.push({
+      name: '2Embed',
+      url: `https://www.2embed.cc/embed/${id}`,
+      priority: 3
+    });
+
+    sources.push({
+      name: 'MultiEmbed',
+      url: `https://multiembed.mov/?video_id=${id}`,
+      priority: 4
+    });
+
+    return sources;
+  }
 };
