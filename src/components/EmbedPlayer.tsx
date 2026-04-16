@@ -38,6 +38,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   // Fetch M3U8 source
   useEffect(() => {
     const fetchSource = async () => {
+      console.log('Fetching source for:', tmdbId, type);
       setIsFetchingSource(true);
       try {
         const response = await axios.get(`/api/embed/vidking-source`, {
@@ -51,6 +52,9 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         if (response.data.source) {
           setVideoSource(response.data.source);
         } else {
+          console.warn('No source found for:', tmdbId, 'Falling back to test stream for UI verification.');
+          // Fallback to test stream if no source found, just for UI verification
+          // setVideoSource('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'); 
           setVideoSource(null);
         }
       } catch (error) {
@@ -202,8 +206,17 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
             onToggleEpisodeList={() => setShowEpisodeList(!showEpisodeList)}
           />
         ) : isFetchingSource ? (
-          <div className="w-full h-full flex items-center justify-center bg-black">
+          <div className="w-full h-full flex items-center justify-center bg-black flex-col gap-6">
             <div className="w-12 h-12 border-4 border-accent-red border-t-transparent rounded-full animate-spin" />
+            <div className="text-center space-y-2">
+              <p className="text-sm font-bold text-white/60 uppercase tracking-widest">Fetching Video Source...</p>
+              <button 
+                onClick={() => setVideoSource('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8')}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
+              >
+                Force Custom Player (Test Stream)
+              </button>
+            </div>
           </div>
         ) : (
           <>

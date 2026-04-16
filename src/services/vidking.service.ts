@@ -42,12 +42,38 @@ export const vidkingService = {
 
       // Look for common patterns in the HTML
       const html = response.data;
-      const sourceMatch = html.match(/file:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i) || 
-                          html.match(/src:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i) ||
-                          html.match(/["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i);
+      let m3u8 = html.match(/file:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i)?.[1] || 
+                 html.match(/src:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i)?.[1] ||
+                 html.match(/["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i)?.[1];
 
-      if (sourceMatch) {
-        return sourceMatch[1];
+      if (!m3u8) {
+        // Try guessing API endpoints or looking for specific scripts
+        const apiGuesses = [
+          `https://vidking.net/api/movie/${id}/source`,
+          `https://vidking.net/api/v1/movie/${id}`,
+          `https://vidking.net/api/source/${type}/${id}`
+        ];
+
+        for (const apiUrl of apiGuesses) {
+          try {
+            const apiRes = await axios.get(apiUrl, { 
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer': 'https://vidking.net/'
+              }
+            });
+            if (apiRes.data?.source || apiRes.data?.url || apiRes.data?.file) {
+              m3u8 = apiRes.data.source || apiRes.data.url || apiRes.data.file;
+              break;
+            }
+          } catch (e) {
+            // Continue to next guess
+          }
+        }
+      }
+
+      if (m3u8) {
+        return m3u8;
       }
 
       // If not found, try to look for an API call or a hidden input

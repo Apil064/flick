@@ -72,7 +72,7 @@ export const Home: React.FC = () => {
         {isSignedIn && <ContinueWatching onPlay={handleDirectPlay} />}
         
         <Carousel 
-          title="Trending Now" 
+          title="Trending Now V2" 
           items={trendingMovies || []} 
           type="movie" 
           onItemClick={(item) => handleItemClick(item, 'movie')} 

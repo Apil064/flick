@@ -170,6 +170,11 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
         playsInline
       />
 
+      {/* Debug Badge */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] px-3 py-1 bg-accent-red text-[10px] font-black uppercase rounded-full shadow-2xl pointer-events-none">
+        Custom Player Active
+      </div>
+
       {/* Loading State */}
       <AnimatePresence>
         {isLoading && (
