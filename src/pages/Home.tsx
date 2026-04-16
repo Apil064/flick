@@ -72,17 +72,9 @@ export const Home: React.FC = () => {
       <div className="relative z-10 -mt-12 md:-mt-24 space-y-12">
         {isSignedIn && <ContinueWatching onPlay={handleDirectPlay} />}
         
-        <Carousel 
-          title="Trending Today" 
-          items={trendingMovies || []} 
-          type="movie" 
-          limit={10}
-          onItemClick={(item) => handleItemClick(item, 'movie')} 
-        />
-
         <Top10Carousel
           title="Top 10 Movies"
-          items={topRatedMovies || []}
+          items={trendingMovies || []}
           type="movie"
           onItemClick={(item) => handleItemClick(item, 'movie')}
         />

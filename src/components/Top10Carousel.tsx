@@ -63,10 +63,11 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="relative group/carousel py-10 px-6 md:px-16 overflow-hidden">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl md:text-4xl font-black tracking-tighter uppercase italic text-white/90">
-          {title}
+    <div className="relative group/carousel py-16 px-6 md:px-16 overflow-hidden bg-black/20">
+      <div className="flex items-center gap-4 mb-12">
+        <h2 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic text-white flex items-baseline gap-4">
+          <span className="text-transparent" style={{ WebkitTextStroke: '2px #E50914' }}>TOP 10</span>
+          <span className="text-sm md:text-xl tracking-[0.3em] font-bold text-white/90 not-italic">CONTENT TODAY</span>
         </h2>
       </div>
 
@@ -74,9 +75,9 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
         {showLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-0 bottom-0 z-40 w-12 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
+            className="absolute left-0 top-0 bottom-0 z-50 w-16 bg-gradient-to-r from-black to-transparent flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
           >
-            <ChevronLeft className="w-8 h-8 text-white" />
+            <ChevronLeft className="w-10 h-10 text-white" />
           </button>
         )}
 
@@ -86,25 +87,27 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
           onMouseDown={handleMouseDown}
           onMouseUp={handleEnd}
           onMouseMove={handleMouseMove}
-          className={`flex gap-12 md:gap-20 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-16 md:gap-24 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-4 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {displayItems.map((item, index) => (
             <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end">
               {/* Numeric Badge */}
-              <div className="absolute -left-10 md:-left-16 bottom-[-10%] z-10 select-none pointer-events-none">
-                <span className="text-[140px] md:text-[220px] font-black leading-none tracking-tighter"
+              <div className="absolute -left-12 md:-left-20 bottom-[-5%] z-10 select-none pointer-events-none">
+                <span className="text-[160px] md:text-[260px] font-black leading-none tracking-tighter transition-all duration-500 group-hover/item:scale-110"
                       style={{ 
-                        WebkitTextStroke: '4px rgba(255,255,255,0.4)',
-                        color: '#0a0a0a',
-                        textShadow: '0 0 40px rgba(0,0,0,0.8)'
+                        WebkitTextStroke: '3px #E50914',
+                        color: 'transparent',
+                        opacity: '0.8'
                       }}>
                   {index + 1}
                 </span>
               </div>
               
-              <div className="ml-6 md:ml-12 relative z-20">
-                <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
+              <div className="ml-8 md:ml-16 relative z-20 transition-all duration-500 group-hover/item:scale-110 group-hover/item:-translate-y-6">
+                <div className="relative rounded-lg overflow-hidden border-4 border-transparent group-hover/item:border-accent-red group-hover/item:shadow-[0_0_40px_rgba(229,9,20,0.6)] transition-all duration-500 shadow-2xl">
+                  <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
+                </div>
               </div>
             </div>
           ))}
@@ -113,9 +116,9 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
         {showRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-0 bottom-0 z-40 w-12 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
+            className="absolute right-0 top-0 bottom-0 z-50 w-16 bg-gradient-to-l from-black to-transparent flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
           >
-            <ChevronRight className="w-8 h-8 text-white" />
+            <ChevronRight className="w-10 h-10 text-white" />
           </button>
         )}
       </div>

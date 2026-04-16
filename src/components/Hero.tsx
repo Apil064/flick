@@ -62,7 +62,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
         >
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2 py-0.5 bg-accent-red text-[9px] font-black uppercase rounded tracking-widest">
-              Trending Now
+              TOP 10 TRENDING TODAY
             </span>
             <span className="flex items-center gap-1 text-yellow-500 font-bold text-xs">
               <Star className="w-3.5 h-3.5 fill-yellow-500" />

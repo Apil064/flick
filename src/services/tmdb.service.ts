@@ -99,7 +99,7 @@ export const tmdbService = {
 
     try {
       const tmdb = getTmdb();
-      const { data } = await tmdb.get(`/trending/${type}/week`);
+      const { data } = await tmdb.get(`/trending/${type}/day`);
       const results = (data.results || []).map(mapResult);
       if (results.length > 0) {
         await cache.set(cacheKey, results, 3600); // 1 hour
