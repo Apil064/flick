@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, List, Play, ChevronRight, Maximize, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, List, Play, Search, ToggleLeft as Toggle, ToggleRight, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
+import { useMovieDetails, useTVSeason } from '../hooks/useMovies';
+import { PlayerContainer } from './player/PlayerContainer';
 
 interface EmbedPlayerProps {
   tmdbId: string;
@@ -23,114 +24,13 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [showEpisodeList, setShowEpisodeList] = useState(false);
   const [episodeSearch, setEpisodeSearch] = useState('');
   const [autoNext, setAutoNext] = useState(true);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   
   const { data: details } = useMovieDetails(type, tmdbId);
   const { data: seasonDetails } = useTVSeason(tmdbId, currentSeason);
-  const { mutate: saveProgress } = useSaveProgress();
-  const [localProgress, setLocalProgress] = useState(startTime);
-
-  // Initialize localProgress correctly when startTime changes
-  useEffect(() => {
-    setLocalProgress(startTime);
-  }, [startTime, tmdbId, currentSeason, currentEpisode]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLocalProgress(prev => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [tmdbId, currentSeason, currentEpisode]);
-
-  // Auto-next logic
-  useEffect(() => {
-    if (!autoNext || type !== 'tv' || !details || !seasonDetails) return;
-    
-    const duration = (details?.runtime || 120) * 60;
-    // If we're near the end (e.g., last 30 seconds), check for next episode
-    if (localProgress >= duration - 30 && duration > 0) {
-      const nextEp = seasonDetails.episodes.find((e: any) => e.episode_number === currentEpisode + 1);
-      if (nextEp) {
-        handleEpisodeChange(currentSeason, nextEp.episode_number);
-        setLocalProgress(0);
-      } else {
-        // Check next season
-        const nextSeason = details.seasons.find((s: any) => s.season_number === currentSeason + 1);
-        if (nextSeason) {
-          setCurrentSeason(nextSeason.season_number);
-          setCurrentEpisode(1);
-          setLocalProgress(0);
-        }
-      }
-    }
-  }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason]);
-
-  useEffect(() => {
-    const duration = type === 'movie' 
-      ? (details?.runtime || 120) * 60 
-      : (details?.episode_run_time?.[0] || 45) * 60;
-
-    const saveInterval = setInterval(() => {
-      saveProgress({
-        tmdb_id: tmdbId,
-        media_type: type,
-        title: title,
-        poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-        backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-        season: type === 'tv' ? currentSeason : 0,
-        episode: type === 'tv' ? currentEpisode : 0,
-        progress_seconds: localProgress,
-        duration_seconds: duration
-      });
-    }, 30000);
-
-    const handleBeforeUnload = () => {
-      saveProgress({
-        tmdb_id: tmdbId,
-        media_type: type,
-        title: title,
-        poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-        backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-        season: type === 'tv' ? currentSeason : 0,
-        episode: type === 'tv' ? currentEpisode : 0,
-        progress_seconds: localProgress,
-        duration_seconds: duration
-      });
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      clearInterval(saveInterval);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      handleBeforeUnload();
-    };
-  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, details?.episode_run_time, localProgress]);
-
-  const videoUrl = type === 'movie'
-    ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
-    : `https://vidking.net/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?color=E50914`
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
-
-  const handleFullscreen = () => {
-    if (iframeRef.current) {
-      iframeRef.current.requestFullscreen().catch(() => {
-        document.documentElement.requestFullscreen();
-      });
-    }
-  };
 
   const handleEpisodeChange = (s: number, e: number) => {
     setCurrentSeason(s);
     setCurrentEpisode(e);
-    setLocalProgress(0);
     if (window.innerWidth < 768) setShowEpisodeList(false);
   };
 
@@ -146,76 +46,29 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden font-sans"
     >
-      {/* Top Bar */}
-      <div className="absolute top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
-        <div className="flex items-center gap-6 pointer-events-auto">
-          <button
-            onClick={onClose}
-            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 group shadow-2xl"
-          >
-            <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
-          </button>
-          <div className="flex flex-col">
-            <h2 className="text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[180px] md:max-w-lg">
-              {title}
-            </h2>
-            {type === 'tv' && (
-              <div className="flex items-center gap-2.5 mt-0.5">
-                <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
-                  S{currentSeason} • E{currentEpisode}
-                </span>
-                <span className="w-1 h-1 rounded-full bg-white/20" />
-                <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
-                  {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 pointer-events-auto">
-          {type === 'tv' && (
-            <button
-              onClick={() => setShowEpisodeList(!showEpisodeList)}
-              className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all border backdrop-blur-xl shadow-2xl ${
-                showEpisodeList 
-                  ? 'bg-accent-red border-accent-red text-white' 
-                  : 'bg-black/40 border-white/10 text-white hover:bg-white/10'
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Browse Episodes</span>
-            </button>
-          )}
-
-          <button
-            onClick={handleFullscreen}
-            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
-            title="Fullscreen"
-          >
-            <Maximize className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={onClose}
-            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
-
-      {/* Video Container */}
+      {/* Player Container */}
       <div className="flex-1 relative bg-black">
-        <iframe
-          ref={iframeRef}
-          src={videoUrl}
-          className="w-full h-full border-none"
-          allowFullScreen
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
-          title="Video Player"
+        <PlayerContainer
+          tmdbId={tmdbId}
+          type={type}
+          title={title || ''}
+          posterPath={posterPath}
+          backdropPath={backdropPath}
+          season={currentSeason}
+          episode={currentEpisode}
+          startTime={startTime}
+          onClose={onClose}
         />
+
+        {/* Episode Sidebar Trigger (Floating) */}
+        {type === 'tv' && !showEpisodeList && (
+          <button
+            onClick={() => setShowEpisodeList(true)}
+            className="absolute top-6 right-20 z-[210] p-3 bg-black/40 hover:bg-black/60 rounded-full transition-all border border-white/10 group"
+          >
+            <List className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+          </button>
+        )}
 
         {/* Episode Sidebar */}
         <AnimatePresence>
@@ -225,7 +78,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 w-full md:w-[500px] bg-bg-primary/98 backdrop-blur-3xl border-l border-white/10 z-[60] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]"
+              className="absolute right-0 top-0 bottom-0 w-full md:w-[500px] bg-bg-primary/98 backdrop-blur-3xl border-l border-white/10 z-[220] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]"
             >
               <div className="p-8 border-b border-white/5 space-y-6">
                 <div className="flex items-center justify-between">
@@ -270,7 +123,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                         </option>
                       ))}
                     </select>
-                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none rotate-90" />
                   </div>
                   <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
                     {filteredEpisodes?.length || 0} Episodes
@@ -325,9 +177,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                             <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
                             {ep.vote_average?.toFixed(1) || 'N/A'}
                           </span>
-                          <span className="text-[10px] font-black text-text-muted bg-white/5 px-2 py-0.5 rounded-md uppercase tracking-tighter">
-                            {ep.runtime ? `${ep.runtime} MIN` : 'N/A'}
-                          </span>
                         </div>
                       </div>
                     </button>
@@ -341,9 +190,3 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     </motion.div>
   );
 };
-
-const Star = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-  </svg>
-);
