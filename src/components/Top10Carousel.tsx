@@ -87,25 +87,39 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
           onMouseDown={handleMouseDown}
           onMouseUp={handleEnd}
           onMouseMove={handleMouseMove}
-          className={`flex gap-16 md:gap-24 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-4 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-8 md:gap-12 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-10 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {displayItems.map((item, index) => (
-            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end">
+            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-center pl-10 md:pl-14">
               {/* Numeric Badge */}
-              <div className="absolute -left-12 md:-left-20 bottom-[-5%] z-10 select-none pointer-events-none">
-                <span className="text-[160px] md:text-[260px] font-black leading-none tracking-tighter transition-all duration-500 group-hover/item:scale-110"
+              <div className="absolute left-0 z-10 select-none pointer-events-none transition-all duration-500 group-hover/item:-translate-x-6 md:group-hover/item:-translate-x-10 group-hover/item:scale-110 origin-right">
+                <span className="text-[90px] md:text-[140px] font-black leading-none tracking-tighter transition-all duration-500"
                       style={{ 
-                        WebkitTextStroke: '3px #E50914',
+                        WebkitTextStroke: '2px #E50914',
                         color: 'transparent',
-                        opacity: '0.8'
                       }}>
-                  {index + 1}
+                  <span className="relative">
+                    {/* Outline Layer */}
+                    {index + 1}
+                    {/* Fill Layer (Visible on Hover) */}
+                    <span className="absolute inset-0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-500"
+                          style={{ 
+                            color: '#E50914',
+                            WebkitTextStroke: '0px',
+                            filter: 'drop-shadow(0 0 20px rgba(229,9,20,0.9))',
+                            background: 'linear-gradient(to bottom, #ff4d4d, #E50914)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent'
+                          }}>
+                      {index + 1}
+                    </span>
+                  </span>
                 </span>
               </div>
               
-              <div className="ml-8 md:ml-16 relative z-20 transition-all duration-500 group-hover/item:scale-110 group-hover/item:-translate-y-6">
-                <div className="relative rounded-lg overflow-hidden border-4 border-transparent group-hover/item:border-accent-red group-hover/item:shadow-[0_0_40px_rgba(229,9,20,0.6)] transition-all duration-500 shadow-2xl">
+              <div className="relative z-20 transition-all duration-500">
+                <div className="relative rounded-lg overflow-hidden transition-all duration-500 shadow-2xl group-hover/item:shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                   <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
                 </div>
               </div>
