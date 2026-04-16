@@ -2,25 +2,22 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MovieCard } from './MovieCard';
 
-interface CarouselProps {
+interface Top10CarouselProps {
   title: string;
   items: any[];
   type: 'movie' | 'tv';
   onItemClick: (item: any) => void;
-  limit?: number;
 }
 
-export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemClick, limit }) => {
+export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type, onItemClick }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const displayItems = limit ? items.slice(0, limit) : items;
+  const displayItems = items.slice(0, 10);
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -36,25 +33,6 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
     return () => window.removeEventListener('resize', checkScroll);
   }, [displayItems]);
 
-  // Auto-scroll logic
-  useEffect(() => {
-    if (isHovered || isDragging || !scrollRef.current || displayItems.length === 0) return;
-
-    const interval = setInterval(() => {
-      if (scrollRef.current) {
-        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-        // If we're at the end, scroll back to start, otherwise scroll right
-        if (scrollLeft >= scrollWidth - clientWidth - 10) {
-          scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
-        }
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isHovered, isDragging, displayItems.length]);
-
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const { clientWidth } = scrollRef.current;
@@ -63,7 +41,6 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
     }
   };
 
-  // Mouse Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     setIsDragging(true);
@@ -79,21 +56,6 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
-  // Touch Handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!scrollRef.current) return;
-    setIsDragging(true);
-    setStartX(e.touches[0].pageX - scrollRef.current.offsetLeft);
-    setScrollLeft(scrollRef.current.scrollLeft);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !scrollRef.current) return;
-    const x = e.touches[0].pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 2;
-    scrollRef.current.scrollLeft = scrollLeft - walk;
-  };
-
   const handleEnd = () => {
     setIsDragging(false);
   };
@@ -101,18 +63,11 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
   if (!items || items.length === 0) return null;
 
   return (
-    <div 
-      ref={containerRef} 
-      className="relative group/carousel py-6 px-6 md:px-16 overflow-hidden"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setIsDragging(false);
-      }}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl md:text-3xl font-black tracking-tighter uppercase italic text-white/90">{title}</h2>
-        <button className="text-xs font-black uppercase tracking-widest text-accent-red hover:text-white transition-colors">See All</button>
+    <div className="relative group/carousel py-10 px-6 md:px-16 overflow-hidden">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl md:text-4xl font-black tracking-tighter uppercase italic text-white/90">
+          {title}
+        </h2>
       </div>
 
       <div className="relative">
@@ -131,15 +86,26 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
           onMouseDown={handleMouseDown}
           onMouseUp={handleEnd}
           onMouseMove={handleMouseMove}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleEnd}
-          className={`flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-12 md:gap-20 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-8 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
-          {displayItems.map((item) => (
-            <div key={item.id} className="snap-start flex-shrink-0">
-              <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
+          {displayItems.map((item, index) => (
+            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end">
+              {/* Numeric Badge */}
+              <div className="absolute -left-10 md:-left-16 bottom-[-10%] z-10 select-none pointer-events-none">
+                <span className="text-[140px] md:text-[220px] font-black leading-none tracking-tighter"
+                      style={{ 
+                        WebkitTextStroke: '4px rgba(255,255,255,0.4)',
+                        color: '#0a0a0a',
+                        textShadow: '0 0 40px rgba(0,0,0,0.8)'
+                      }}>
+                  {index + 1}
+                </span>
+              </div>
+              
+              <div className="ml-6 md:ml-12 relative z-20">
+                <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
+              </div>
             </div>
           ))}
         </div>

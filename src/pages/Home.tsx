@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useUser } from '@clerk/clerk-react';
 import { useTrending, usePopular, useTopRated, useByGenre, useRecent, useByGenreName } from '../hooks/useMovies';
 import { Carousel } from '../components/Carousel';
+import { Top10Carousel } from '../components/Top10Carousel';
 import { MovieDetail } from './MovieDetail';
 import { EmbedPlayer } from '../components/EmbedPlayer';
 import { ContinueWatching } from '../components/ContinueWatching';
@@ -72,10 +73,18 @@ export const Home: React.FC = () => {
         {isSignedIn && <ContinueWatching onPlay={handleDirectPlay} />}
         
         <Carousel 
-          title="Trending Now" 
+          title="Trending Today" 
           items={trendingMovies || []} 
           type="movie" 
+          limit={10}
           onItemClick={(item) => handleItemClick(item, 'movie')} 
+        />
+
+        <Top10Carousel
+          title="Top 10 Movies"
+          items={topRatedMovies || []}
+          type="movie"
+          onItemClick={(item) => handleItemClick(item, 'movie')}
         />
         
         <Carousel 
