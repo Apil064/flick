@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, List, Play, ChevronRight, Maximize, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
+import { CustomVideoPlayer } from './CustomVideoPlayer';
+import axios from 'axios';
 
 interface EmbedPlayerProps {
   tmdbId: string;
@@ -23,30 +25,64 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [showEpisodeList, setShowEpisodeList] = useState(false);
   const [episodeSearch, setEpisodeSearch] = useState('');
   const [autoNext, setAutoNext] = useState(true);
+  const [videoSource, setVideoSource] = useState<string | null>(null);
+  const [isFetchingSource, setIsFetchingSource] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   
   const { data: details } = useMovieDetails(type, tmdbId);
   const { data: seasonDetails } = useTVSeason(tmdbId, currentSeason);
   const { mutate: saveProgress } = useSaveProgress();
   const [localProgress, setLocalProgress] = useState(startTime);
+  const [localDuration, setLocalDuration] = useState(0);
+
+  // Fetch M3U8 source
+  useEffect(() => {
+    const fetchSource = async () => {
+      setIsFetchingSource(true);
+      try {
+        const response = await axios.get(`/api/embed/vidking-source`, {
+          params: {
+            id: tmdbId,
+            type,
+            season: currentSeason,
+            episode: currentEpisode
+          }
+        });
+        if (response.data.source) {
+          setVideoSource(response.data.source);
+        } else {
+          setVideoSource(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch video source:', error);
+        setVideoSource(null);
+      } finally {
+        setIsFetchingSource(false);
+      }
+    };
+
+    fetchSource();
+  }, [tmdbId, type, currentSeason, currentEpisode]);
 
   // Initialize localProgress correctly when startTime changes
   useEffect(() => {
     setLocalProgress(startTime);
   }, [startTime, tmdbId, currentSeason, currentEpisode]);
 
+  // Progress tracking for iframe fallback
   useEffect(() => {
+    if (videoSource) return; // Custom player handles its own progress
     const interval = setInterval(() => {
       setLocalProgress(prev => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [tmdbId, currentSeason, currentEpisode]);
+  }, [tmdbId, currentSeason, currentEpisode, videoSource]);
 
   // Auto-next logic
   useEffect(() => {
     if (!autoNext || type !== 'tv' || !details || !seasonDetails) return;
     
-    const duration = (details?.runtime || 120) * 60;
+    const duration = localDuration || (details?.runtime || 120) * 60;
     // If we're near the end (e.g., last 30 seconds), check for next episode
     if (localProgress >= duration - 30 && duration > 0) {
       const nextEp = seasonDetails.episodes.find((e: any) => e.episode_number === currentEpisode + 1);
@@ -63,12 +99,12 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         }
       }
     }
-  }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason]);
+  }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason, localDuration]);
 
   useEffect(() => {
-    const duration = type === 'movie' 
+    const duration = localDuration || (type === 'movie' 
       ? (details?.runtime || 120) * 60 
-      : (details?.episode_run_time?.[0] || 45) * 60;
+      : (details?.episode_run_time?.[0] || 45) * 60);
 
     const saveInterval = setInterval(() => {
       saveProgress({
@@ -79,8 +115,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
         season: type === 'tv' ? currentSeason : 0,
         episode: type === 'tv' ? currentEpisode : 0,
-        progress_seconds: localProgress,
-        duration_seconds: duration
+        progress_seconds: Math.floor(localProgress),
+        duration_seconds: Math.floor(duration)
       });
     }, 30000);
 
@@ -93,8 +129,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
         season: type === 'tv' ? currentSeason : 0,
         episode: type === 'tv' ? currentEpisode : 0,
-        progress_seconds: localProgress,
-        duration_seconds: duration
+        progress_seconds: Math.floor(localProgress),
+        duration_seconds: Math.floor(duration)
       });
     };
 
@@ -105,9 +141,9 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       window.removeEventListener('beforeunload', handleBeforeUnload);
       handleBeforeUnload();
     };
-  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, details?.episode_run_time, localProgress]);
+  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, details?.episode_run_time, localProgress, localDuration]);
 
-  const videoUrl = type === 'movie'
+  const fallbackVideoUrl = type === 'movie'
     ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
     : `https://vidking.net/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?color=E50914`
 
@@ -146,76 +182,101 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden font-sans"
     >
-      {/* Top Bar */}
-      <div className="absolute top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
-        <div className="flex items-center gap-6 pointer-events-auto">
-          <button
-            onClick={onClose}
-            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 group shadow-2xl"
-          >
-            <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
-          </button>
-          <div className="flex flex-col">
-            <h2 className="text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[180px] md:max-w-lg">
-              {title}
-            </h2>
-            {type === 'tv' && (
-              <div className="flex items-center gap-2.5 mt-0.5">
-                <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
-                  S{currentSeason} • E{currentEpisode}
-                </span>
-                <span className="w-1 h-1 rounded-full bg-white/20" />
-                <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
-                  {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 pointer-events-auto">
-          {type === 'tv' && (
-            <button
-              onClick={() => setShowEpisodeList(!showEpisodeList)}
-              className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all border backdrop-blur-xl shadow-2xl ${
-                showEpisodeList 
-                  ? 'bg-accent-red border-accent-red text-white' 
-                  : 'bg-black/40 border-white/10 text-white hover:bg-white/10'
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Browse Episodes</span>
-            </button>
-          )}
-
-          <button
-            onClick={handleFullscreen}
-            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
-            title="Fullscreen"
-          >
-            <Maximize className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={onClose}
-            className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
-
       {/* Video Container */}
       <div className="flex-1 relative bg-black">
-        <iframe
-          ref={iframeRef}
-          src={videoUrl}
-          className="w-full h-full border-none"
-          allowFullScreen
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
-          title="Video Player"
-        />
+        {videoSource ? (
+          <CustomVideoPlayer
+            source={videoSource}
+            title={title}
+            type={type}
+            season={currentSeason}
+            episode={currentEpisode}
+            details={details}
+            seasonDetails={seasonDetails}
+            startTime={startTime}
+            onClose={onClose}
+            onProgress={(p, d) => {
+              setLocalProgress(p);
+              setLocalDuration(d);
+            }}
+            onToggleEpisodeList={() => setShowEpisodeList(!showEpisodeList)}
+          />
+        ) : isFetchingSource ? (
+          <div className="w-full h-full flex items-center justify-center bg-black">
+            <div className="w-12 h-12 border-4 border-accent-red border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <>
+            {/* Top Bar (Only for iframe fallback) */}
+            <div className="absolute top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
+              <div className="flex items-center gap-6 pointer-events-auto">
+                <button
+                  onClick={onClose}
+                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 group shadow-2xl"
+                >
+                  <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+                </button>
+                <div className="flex flex-col">
+                  <h2 className="text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[180px] md:max-w-lg">
+                    {title}
+                  </h2>
+                  {type === 'tv' && (
+                    <div className="flex items-center gap-2.5 mt-0.5">
+                      <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
+                        S{currentSeason} • E{currentEpisode}
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-white/20" />
+                      <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
+                        {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 pointer-events-auto">
+                {type === 'tv' && (
+                  <button
+                    onClick={() => setShowEpisodeList(!showEpisodeList)}
+                    className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all border backdrop-blur-xl shadow-2xl ${
+                      showEpisodeList 
+                        ? 'bg-accent-red border-accent-red text-white' 
+                        : 'bg-black/40 border-white/10 text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline">Browse Episodes</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={handleFullscreen}
+                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
+                  title="Fullscreen"
+                >
+                  <Maximize className="w-6 h-6" />
+                </button>
+
+                <button
+                  onClick={onClose}
+                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <iframe
+              ref={iframeRef}
+              src={fallbackVideoUrl}
+              className="w-full h-full border-none"
+              allowFullScreen
+              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
+              title="Video Player"
+            />
+          </>
+        )}
 
         {/* Episode Sidebar */}
         <AnimatePresence>
@@ -225,7 +286,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 w-full md:w-[500px] bg-bg-primary/98 backdrop-blur-3xl border-l border-white/10 z-[60] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]"
+              className="absolute right-0 top-0 bottom-0 w-full md:w-[500px] bg-bg-primary/98 backdrop-blur-3xl border-l border-white/10 z-[160] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]"
             >
               <div className="p-8 border-b border-white/5 space-y-6">
                 <div className="flex items-center justify-between">
