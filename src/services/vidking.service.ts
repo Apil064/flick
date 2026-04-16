@@ -40,40 +40,93 @@ export const vidkingService = {
         }
       });
 
-      // Look for common patterns in the HTML
+      // Look for common patterns in the HTML using advanced regexes from m3u8player.online
       const html = response.data;
-      let m3u8 = html.match(/file:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i)?.[1] || 
-                 html.match(/src:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i)?.[1] ||
-                 html.match(/["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i)?.[1];
+      
+      const rx = [
+        /https?:\/\/[^\s"'`<>\\]+?\.m3u8(?:[^\s"'`<>\\]*)/ig,
+        /\/\/[^\s"'`<>\\]+?\.m3u8(?:[^\s"'`<>\\]*)/ig,
+        /["'](?:url|src|file|source|manifest|playlist)["']\s*[:=]\s*["']([^"']+?\.m3u8[^"']*)["']/ig,
+        /(?:url|src|file|source|manifest|playlist)\s*[:=]\s*["']([^"']+?\.m3u8[^"']*)["']/ig
+      ];
 
-      if (!m3u8) {
-        // Try guessing API endpoints or looking for specific scripts
-        const apiGuesses = [
-          `https://vidking.net/api/movie/${id}/source`,
-          `https://vidking.net/api/v1/movie/${id}`,
-          `https://vidking.net/api/source/${type}/${id}`
-        ];
+      let foundM3u8: string | null = null;
 
-        for (const apiUrl of apiGuesses) {
-          try {
-            const apiRes = await axios.get(apiUrl, { 
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Referer': 'https://vidking.net/'
-              }
-            });
-            if (apiRes.data?.source || apiRes.data?.url || apiRes.data?.file) {
-              m3u8 = apiRes.data.source || apiRes.data.url || apiRes.data.file;
-              break;
+      // 1. Try regex matching on the whole HTML
+      for (const regex of rx) {
+        const matches = html.matchAll(regex);
+        for (const match of matches) {
+          const url = match[1] || match[0];
+          if (url && !url.includes('m3u8player.online')) { // Avoid matching the tool itself if it appears
+            foundM3u8 = url;
+            break;
+          }
+        }
+        if (foundM3u8) break;
+      }
+
+      // 2. Try searching in common global variables if present in HTML
+      if (!foundM3u8) {
+        const globalKeys = ['__NEXT_DATA__', '__INITIAL_STATE__', '__PRELOADED_STATE__'];
+        for (const key of globalKeys) {
+          const scriptRegex = new RegExp(`<script[^>]*id=["']${key}["'][^>]*>([^<]+)</script>`, 'i');
+          const scriptMatch = html.match(scriptRegex);
+          if (scriptMatch) {
+            try {
+              const data = JSON.parse(scriptMatch[1]);
+              const searchObj = (obj: any): string | null => {
+                for (const k in obj) {
+                  if (typeof obj[k] === 'string' && obj[k].includes('.m3u8')) return obj[k];
+                  if (typeof obj[k] === 'object' && obj[k] !== null) {
+                    const res = searchObj(obj[k]);
+                    if (res) return res;
+                  }
+                }
+                return null;
+              };
+              foundM3u8 = searchObj(data);
+              if (foundM3u8) break;
+            } catch (e) {
+              // Ignore parse errors
             }
-          } catch (e) {
-            // Continue to next guess
           }
         }
       }
 
-      if (m3u8) {
-        return m3u8;
+      if (foundM3u8) {
+        // Clean up the URL if it starts with //
+        if (foundM3u8.startsWith('//')) {
+          foundM3u8 = 'https:' + foundM3u8;
+        }
+        return foundM3u8;
+      }
+
+      // Try guessing API endpoints or looking for specific scripts
+      const apiGuesses = [
+        `https://vidking.net/api/movie/${id}/source`,
+        `https://vidking.net/api/v1/movie/${id}`,
+        `https://vidking.net/api/source/${type}/${id}`
+      ];
+
+      for (const apiUrl of apiGuesses) {
+        try {
+          const apiRes = await axios.get(apiUrl, { 
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Referer': 'https://vidking.net/'
+            }
+          });
+          if (apiRes.data?.source || apiRes.data?.url || apiRes.data?.file) {
+            foundM3u8 = apiRes.data.source || apiRes.data.url || apiRes.data.file;
+            break;
+          }
+        } catch (e) {
+          // Continue to next guess
+        }
+      }
+
+      if (foundM3u8) {
+        return foundM3u8;
       }
 
       // If not found, try to look for an API call or a hidden input

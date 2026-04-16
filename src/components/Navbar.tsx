@@ -37,7 +37,7 @@ export const Navbar: React.FC = () => {
       >
         <div className="flex items-center gap-10">
           <Link to="/" className="text-3xl font-black tracking-tighter text-accent-red italic">
-            FLICK V2
+            FLICK
           </Link>
 
           <div className="hidden lg:flex items-center gap-6">
