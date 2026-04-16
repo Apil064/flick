@@ -87,14 +87,14 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
           onMouseDown={handleMouseDown}
           onMouseUp={handleEnd}
           onMouseMove={handleMouseMove}
-          className={`flex gap-12 md:gap-20 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-10 px-12 md:px-20 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-12 md:gap-20 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-10 px-24 md:px-40 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {displayItems.map((item, index) => (
-            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end pl-12 md:pl-20">
+            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end pl-16 md:pl-24">
               {/* Numeric Badge */}
-              <div className="absolute left-0 bottom-[-5%] z-10 select-none pointer-events-none transition-all duration-500 group-hover/item:-translate-x-8 md:group-hover/item:-translate-x-12 group-hover/item:scale-110 origin-bottom-right">
-                <span className="text-[120px] md:text-[200px] font-black leading-[0.8] tracking-tighter transition-all duration-500"
+              <div className="absolute left-0 bottom-[-10%] z-10 select-none pointer-events-none transition-all duration-500 group-hover/item:-translate-x-10 md:group-hover/item:-translate-x-14 group-hover/item:scale-110 origin-bottom-right">
+                <span className="text-[100px] md:text-[160px] font-black leading-[0.7] tracking-tighter transition-all duration-500"
                       style={{ 
                         WebkitTextStroke: '2px #E50914',
                         color: 'transparent',
