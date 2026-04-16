@@ -27,6 +27,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [autoNext, setAutoNext] = useState(true);
   const [videoSource, setVideoSource] = useState<string | null>(null);
   const [isFetchingSource, setIsFetchingSource] = useState(true);
+  const [debugCustom, setDebugCustom] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   
   const { data: details } = useMovieDetails(type, tmdbId);
@@ -185,9 +186,10 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     >
       {/* Video Container */}
       <div className="flex-1 relative bg-black">
-        {videoSource ? (
+        {(videoSource || debugCustom) ? (
           <CustomVideoPlayer
-            source={videoSource}
+            key={`${tmdbId}-${currentSeason}-${currentEpisode}-${debugCustom}`}
+            source={debugCustom ? "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" : videoSource!}
             title={title}
             type={type}
             season={currentSeason}
@@ -264,6 +266,12 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                 >
                   <X className="w-6 h-6" />
                 </button>
+
+                {/* Secret Debug Toggle */}
+                <button 
+                  onDoubleClick={() => setDebugCustom(!debugCustom)}
+                  className="opacity-0 w-4 h-4 absolute top-0 right-0 cursor-default"
+                />
               </div>
             </div>
 
