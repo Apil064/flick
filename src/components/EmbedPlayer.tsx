@@ -437,22 +437,18 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       {/* ── Main: Videasy iframe + ad shields ───────────────────────────────── */}
       <div className="flex-1 relative bg-black">
         {/*
-          ✅  NO sandbox — Videasy detects it and stops playing.
-
-          Ad blocking is done via:
-            • window.open override (above) — kills popup/tab-hijack ads
-            • referrerPolicy="no-referrer"  — hides your site from ad trackers
-            • Edge shield divs (below)      — intercept banner-ad click areas
-            • beforeunload listener (above) — blocks top-frame navigation
+          ✅  Method 1: Invisible Wall (CSP + Restricted Sandbox)
+          We omit 'allow-top-navigation' and 'allow-popups' to kill redirects.
+          'allow-same-origin' is kept so Videasy doesn't detect a restricted sandbox.
         */}
         <iframe
           key={`${tmdbId}-${type}-${currentSeason}-${currentEpisode}`}
           ref={iframeRef}
           src={videasyUrl}
+          sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-fullscreen"
           className="w-full h-full border-none"
           allowFullScreen
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen"
           referrerPolicy="no-referrer"
           title={`${title}${type === 'tv' ? ` S${currentSeason}E${currentEpisode}` : ''}`}
           onLoad={() => setTimeout(() => setIsLoading(false), 600)}
