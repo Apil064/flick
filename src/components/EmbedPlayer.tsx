@@ -357,7 +357,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
           className="w-full h-full border-none"
           allowFullScreen
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation allow-popups"
+          
           title="Video Player"
           onLoad={() => setIsLoading(false)}
         />
