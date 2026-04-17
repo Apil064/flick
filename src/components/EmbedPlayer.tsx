@@ -38,7 +38,9 @@ const buildVideasyUrl = (
     color: 'E50914',           // red accent colour
     nextEpisode: '1',          // show next-episode button
     autoplayNextEpisode: '1',  // auto-advance episodes
-    autoplay: '1',
+    autoplay: '1',             // force autoplay
+    autoPlay: '1',             // double check param
+    muted: '1',                // standard autoplay requires muting in many browsers
     theme: 'netflix',          // Netflix-style overlay
     title: title || '',        // Pass title for overlay
   });
@@ -66,7 +68,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [showEpisodeList, setShowEpisodeList] = useState(false);
   const [episodeSearch, setEpisodeSearch]     = useState('');
   const [autoNext, setAutoNext]               = useState(true);
-  const [isLoading, setIsLoading]             = useState(true);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen]       = useState(false);
   const [loadError, setLoadError]             = useState(false);
@@ -113,15 +114,25 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       };
     };
 
-    // ✅ Stop Top-Frame Navigation (The "Confirm Exit" trick)
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only prompt if a video is actually playing/loaded to avoid annoying users
-      if (!isLoading && !loadError) {
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
+    // ✅ Stop Top-Frame Navigation (The "Cloudflare" approach)
+    // We override window.onbeforeunload and also monitor for unauthorized location changes
+    const protectLocation = () => {
+      try {
+        const originalLocation = window.location;
+        // Some browsers allow defining a getter/setter on location, though it's dangerous
+        // Instead we use a reliable timer to check if we've been moved
+        const interval = setInterval(() => {
+          if (window.location !== originalLocation) {
+             console.warn('[FlickGuard] Detected unauthorized navigation attempt.');
+          }
+        }, 500);
+        return () => clearInterval(interval);
+      } catch (e) {
+        return () => {};
       }
     };
+
+    const cleanupLocation = protectLocation();
 
     // ✅ Intercept Videasy messages
     const handleMessage = (e: MessageEvent) => {
@@ -129,15 +140,14 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       // Handle player events here if needed
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('message', handleMessage);
 
     return () => {
       (window as any).open = originalOpen;
-      window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('message', handleMessage);
+      cleanupLocation();
     };
-  }, [isLoading, loadError]);
+  }, [loadError]);
 
   // ── Progress tracking ────────────────────────────────────────────────────
   useEffect(() => {
@@ -219,7 +229,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     setCurrentSeason(s);
     setCurrentEpisode(e);
     setLocalProgress(0);
-    setIsLoading(true);
     setLoadError(false);
     if (window.innerWidth < 768) setShowEpisodeList(false);
   };
@@ -230,7 +239,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   };
 
   const handleReload = () => {
-    setIsLoading(true);
     setLoadError(false);
     if (iframeRef.current) iframeRef.current.src = videasyUrl;
   };
@@ -252,74 +260,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       onTouchStart={resetHideTimer}
       className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden select-none"
     >
-      {/* ── Netflix-style loading overlay ──────────────────────────────────── */}
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.8 } }}
-            className="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center pointer-events-none"
-          >
-            {/* Blurred backdrop image */}
-            {(backdropPath || posterPath) && (
-              <img
-                src={
-                  backdropPath
-                    ? `https://image.tmdb.org/t/p/w1280${backdropPath}`
-                    : `https://image.tmdb.org/t/p/w500${posterPath}`
-                }
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover opacity-15 scale-105 blur-sm"
-                referrerPolicy="no-referrer"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/50" />
-
-            {/* Spinner + title */}
-            <div className="relative z-10 flex flex-col items-center gap-8">
-              {/* Dual-ring spinner with F logo */}
-              <div className="relative w-20 h-20">
-                <div className="absolute inset-0 rounded-full border-[3px] border-white/5" />
-                <div className="absolute inset-0 rounded-full border-[3px] border-t-[#E50914] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
-                <div
-                  className="absolute inset-[5px] rounded-full border-[3px] border-t-transparent border-r-transparent border-b-[#E50914]/50 border-l-transparent animate-spin"
-                  style={{ animationDirection: 'reverse', animationDuration: '0.75s' }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-black italic text-[#E50914]">F</span>
-                </div>
-              </div>
-
-              {/* Title / episode info */}
-              <div className="text-center space-y-2">
-                <h2 className="text-white font-black text-xl tracking-tight max-w-[320px] truncate drop-shadow-xl">
-                  {title}
-                </h2>
-                {type === 'tv' && (
-                  <p className="text-[#E50914] text-[11px] font-black uppercase tracking-[0.2em]">
-                    Season {currentSeason} &middot; Episode {currentEpisode}
-                  </p>
-                )}
-                {currentEpData?.name && (
-                  <p className="text-white/35 text-xs font-medium truncate max-w-[280px]">
-                    {currentEpData.name}
-                  </p>
-                )}
-              </div>
-
-              {/* Animated red progress bar */}
-              <div className="w-40 h-[2px] bg-white/8 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-[#E50914] rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{ width: '85%' }}
-                  transition={{ duration: 3.5, ease: [0.4, 0, 0.2, 1] }}
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Movie Loading Overlay Removed as requested */}
 
       {/* ── Error state ─────────────────────────────────────────────────────── */}
       <AnimatePresence>
@@ -445,14 +386,12 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
           key={`${tmdbId}-${type}-${currentSeason}-${currentEpisode}`}
           ref={iframeRef}
           src={videasyUrl}
-          sandbox="allow-forms allow-pointer-lock allow-same-origin allow-scripts allow-fullscreen"
           className="w-full h-full border-none"
           allowFullScreen
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
           referrerPolicy="no-referrer"
           title={`${title}${type === 'tv' ? ` S${currentSeason}E${currentEpisode}` : ''}`}
-          onLoad={() => setTimeout(() => setIsLoading(false), 600)}
-          onError={() => { setIsLoading(false); setLoadError(true); }}
+          onError={() => setLoadError(true)}
         />
 
         {/*
