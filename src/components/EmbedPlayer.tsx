@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, ChevronLeft, List, Play, ChevronRight,
   Maximize, Search, ToggleLeft as Toggle, ToggleRight,
-  Server, RefreshCw, AlertCircle, Minimize2
+  RefreshCw, Minimize2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
@@ -20,132 +20,186 @@ interface EmbedPlayerProps {
   startTime?: number;
 }
 
-const getSources = (tmdbId: string, type: 'movie' | 'tv', season: number, episode: number) => [
-  {
-    name: 'Videasy',
-    label: 'S1',
-    color: '#E50914',
-    url: type === 'movie'
-      ? `https://player.videasy.net/movie/${tmdbId}?color=E50914&nextEpisode=1&autoplayNextEpisode=1`
-      : `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}?color=E50914&nextEpisode=1&autoplayNextEpisode=1`,
-  },
-  {
-    name: 'VidSrc',
-    label: 'S2',
-    color: '#3b82f6',
-    url: type === 'movie'
-      ? `https://vidsrc.to/embed/movie/${tmdbId}`
-      : `https://vidsrc.to/embed/tv/${tmdbId}/${season}/${episode}`,
-  },
-  {
-    name: 'MultiEmbed',
-    label: 'S3',
-    color: '#8b5cf6',
-    url: type === 'movie'
-      ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`
-      : `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`,
-  },
-  {
-    name: '2Embed',
-    label: 'S4',
-    color: '#10b981',
-    url: type === 'movie'
-      ? `https://www.2embed.cc/embed/${tmdbId}`
-      : `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}`,
-  },
-];
+// ── Videasy URL builder ──────────────────────────────────────────────────────
+const buildVideasyUrl = (
+  tmdbId: string,
+  type: 'movie' | 'tv',
+  season: number,
+  episode: number,
+) => {
+  const base =
+    type === 'movie'
+      ? `https://player.videasy.net/movie/${tmdbId}`
+      : `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`;
+
+  const params = new URLSearchParams({
+    color: 'E50914',           // red accent colour
+    nextEpisode: '1',          // show next-episode button
+    autoplayNextEpisode: '1',  // auto-advance episodes
+    autoplay: '1',
+  });
+
+  return `${base}?${params.toString()}`;
+};
 
 export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
-  tmdbId, type, season = 1, episode = 1,
-  title, onClose, posterPath, backdropPath, startTime = 0
+  tmdbId,
+  type,
+  season = 1,
+  episode = 1,
+  title,
+  onClose,
+  posterPath,
+  backdropPath,
+  startTime = 0,
 }) => {
-  const [currentSeason, setCurrentSeason] = useState(season);
-  const [currentEpisode, setCurrentEpisode] = useState(episode);
+  const [currentSeason, setCurrentSeason]     = useState(season);
+  const [currentEpisode, setCurrentEpisode]   = useState(episode);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
-  const [showServerPanel, setShowServerPanel] = useState(false);
-  const [episodeSearch, setEpisodeSearch] = useState('');
-  const [autoNext, setAutoNext] = useState(true);
-  const [activeSourceIdx, setActiveSourceIdx] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [episodeSearch, setEpisodeSearch]     = useState('');
+  const [autoNext, setAutoNext]               = useState(true);
+  const [isLoading, setIsLoading]             = useState(true);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const [isFullscreen, setIsFullscreen]       = useState(false);
+  const [loadError, setLoadError]             = useState(false);
 
-  const { data: details } = useMovieDetails(type, tmdbId);
+  const iframeRef    = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hideTimer    = useRef<ReturnType<typeof setTimeout>>();
+
+  const { data: details }       = useMovieDetails(type, tmdbId);
   const { data: seasonDetails } = useTVSeason(tmdbId, currentSeason);
   const { mutate: saveProgress } = useSaveProgress();
   const [localProgress, setLocalProgress] = useState(startTime);
 
-  const sources = getSources(tmdbId, type, currentSeason, currentEpisode);
-  const activeSource = sources[activeSourceIdx];
+  const videasyUrl = buildVideasyUrl(tmdbId, type, currentSeason, currentEpisode);
 
-  useEffect(() => { setLocalProgress(startTime); }, [startTime, tmdbId, currentSeason, currentEpisode]);
+  // ── Ad / redirect blocking (no sandbox needed) ───────────────────────────
+  // Strategy:
+  //  1. Override window.open  → kills popup ads
+  //  2. Intercept beforeunload → prevents top-frame navigation hijacks
+  //  3. Edge shields (below)  → block accidental banner-ad clicks
+  //  4. referrerPolicy="no-referrer" on iframe → hides origin from ad networks
+  useEffect(() => {
+    const originalOpen = window.open.bind(window);
+
+    // Block any popup that isn't explicitly opened by our own code.
+    // Videasy itself uses postMessage, not window.open, so this is safe.
+    (window as any).open = (...args: Parameters<typeof window.open>) => {
+      const url = args[0]?.toString() ?? '';
+      // Allow Videasy's own domains through, block everything else
+      if (url.includes('videasy.net') || url.includes('themoviedb.org')) {
+        return originalOpen(...args);
+      }
+      console.warn('[FlickAdBlock] Blocked popup:', url);
+      return null;
+    };
+
+    // Prevent the page from being navigated away by a rogue iframe script
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    // Listen for Videasy postMessage events (episode changes, etc.)
+    const handleMessage = (e: MessageEvent) => {
+      if (!e.origin.includes('videasy.net')) return;
+      // Future: handle { type: 'nextEpisode' } etc.
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      (window as any).open = originalOpen;
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
+  // ── Progress tracking ────────────────────────────────────────────────────
+  useEffect(() => {
+    setLocalProgress(startTime);
+  }, [startTime, tmdbId, currentSeason, currentEpisode]);
+
   useEffect(() => {
     const t = setInterval(() => setLocalProgress(p => p + 1), 1000);
     return () => clearInterval(t);
   }, [tmdbId, currentSeason, currentEpisode]);
 
-  // Save progress
   useEffect(() => {
-    const duration = type === 'movie'
-      ? (details?.runtime || 120) * 60
-      : (details?.episode_run_time?.[0] || 45) * 60;
+    const duration =
+      type === 'movie'
+        ? (details?.runtime || 120) * 60
+        : (details?.episode_run_time?.[0] || 45) * 60;
 
-    const save = () => saveProgress({
-      tmdb_id: tmdbId, media_type: type, title,
-      poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-      backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-      season: type === 'tv' ? currentSeason : 0,
-      episode: type === 'tv' ? currentEpisode : 0,
-      progress_seconds: localProgress,
-      duration_seconds: duration
-    });
+    const save = () =>
+      saveProgress({
+        tmdb_id: tmdbId,
+        media_type: type,
+        title,
+        poster_path:
+          posterPath ||
+          details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+        backdrop_path:
+          backdropPath ||
+          details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
+        season: type === 'tv' ? currentSeason : 0,
+        episode: type === 'tv' ? currentEpisode : 0,
+        progress_seconds: localProgress,
+        duration_seconds: duration,
+      });
 
-    const interval = setInterval(save, 30000);
+    const interval = setInterval(save, 30_000);
     window.addEventListener('beforeunload', save);
-    return () => { clearInterval(interval); window.removeEventListener('beforeunload', save); save(); };
-  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath,
-      details, localProgress]);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', save);
+      save();
+    };
+  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details, localProgress]);
 
-  // Auto-hide controls
+  // ── Controls auto-hide ───────────────────────────────────────────────────
   const resetHideTimer = useCallback(() => {
     setControlsVisible(true);
     clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => {
-      if (!showEpisodeList && !showServerPanel) setControlsVisible(false);
+      if (!showEpisodeList) setControlsVisible(false);
     }, 3500);
-  }, [showEpisodeList, showServerPanel]);
-
-  useEffect(() => { resetHideTimer(); return () => clearTimeout(hideTimer.current); }, [resetHideTimer]);
+  }, [showEpisodeList]);
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
+    resetHideTimer();
+    return () => clearTimeout(hideTimer.current);
+  }, [resetHideTimer]);
+
+  // ── Keyboard shortcuts ───────────────────────────────────────────────────
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (showEpisodeList) setShowEpisodeList(false);
-        else if (showServerPanel) setShowServerPanel(false);
         else onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose, showEpisodeList, showServerPanel]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose, showEpisodeList]);
 
+  // ── Fullscreen sync ──────────────────────────────────────────────────────
   useEffect(() => {
     const h = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', h);
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
   const handleEpisodeChange = (s: number, e: number) => {
-    setCurrentSeason(s); setCurrentEpisode(e);
-    setLocalProgress(0); setIsLoading(true); setActiveSourceIdx(0);
+    setCurrentSeason(s);
+    setCurrentEpisode(e);
+    setLocalProgress(0);
+    setIsLoading(true);
+    setLoadError(false);
     if (window.innerWidth < 768) setShowEpisodeList(false);
-  };
-
-  const handleSourceChange = (idx: number) => {
-    setActiveSourceIdx(idx); setIsLoading(true); setShowServerPanel(false);
   };
 
   const handleFullscreen = () => {
@@ -153,13 +207,23 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     else document.exitFullscreen();
   };
 
-  const filteredEpisodes = seasonDetails?.episodes?.filter((ep: any) =>
-    ep.name.toLowerCase().includes(episodeSearch.toLowerCase()) ||
-    ep.episode_number.toString().includes(episodeSearch)
+  const handleReload = () => {
+    setIsLoading(true);
+    setLoadError(false);
+    if (iframeRef.current) iframeRef.current.src = videasyUrl;
+  };
+
+  const filteredEpisodes = seasonDetails?.episodes?.filter(
+    (ep: any) =>
+      ep.name.toLowerCase().includes(episodeSearch.toLowerCase()) ||
+      ep.episode_number.toString().includes(episodeSearch),
   );
 
-  const currentEpData = seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode);
+  const currentEpData = seasonDetails?.episodes?.find(
+    (e: any) => e.episode_number === currentEpisode,
+  );
 
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <motion.div
       ref={containerRef}
@@ -170,102 +234,160 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       onTouchStart={resetHideTimer}
       className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden select-none"
     >
-      {/* Loading overlay */}
+      {/* ── Netflix-style loading overlay ──────────────────────────────────── */}
       <AnimatePresence>
         {isLoading && (
           <motion.div
-            initial={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute inset-0 z-30 bg-black flex flex-col items-center justify-center gap-6 pointer-events-none"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.8 } }}
+            className="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center pointer-events-none"
           >
+            {/* Blurred backdrop image */}
             {(backdropPath || posterPath) && (
               <img
-                src={backdropPath ? `https://image.tmdb.org/t/p/w1280${backdropPath}` : `https://image.tmdb.org/t/p/w500${posterPath}`}
-                alt="" className="absolute inset-0 w-full h-full object-cover opacity-20"
+                src={
+                  backdropPath
+                    ? `https://image.tmdb.org/t/p/w1280${backdropPath}`
+                    : `https://image.tmdb.org/t/p/w500${posterPath}`
+                }
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover opacity-15 scale-105 blur-sm"
                 referrerPolicy="no-referrer"
               />
             )}
-            <div className="relative z-10 flex flex-col items-center gap-4">
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/50" />
+
+            {/* Spinner + title */}
+            <div className="relative z-10 flex flex-col items-center gap-8">
+              {/* Dual-ring spinner with F logo */}
               <div className="relative w-20 h-20">
-                <div className="absolute inset-0 rounded-full border-4 border-white/5" />
-                <div className="absolute inset-0 rounded-full border-4 border-t-[#E50914] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                <div className="absolute inset-0 rounded-full border-[3px] border-white/5" />
+                <div className="absolute inset-0 rounded-full border-[3px] border-t-[#E50914] border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                <div
+                  className="absolute inset-[5px] rounded-full border-[3px] border-t-transparent border-r-transparent border-b-[#E50914]/50 border-l-transparent animate-spin"
+                  style={{ animationDirection: 'reverse', animationDuration: '0.75s' }}
+                />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-2xl font-black italic text-[#E50914]">F</span>
                 </div>
               </div>
-              <div className="text-center">
-                <p className="text-white font-black text-lg tracking-tight truncate max-w-xs">{title}</p>
+
+              {/* Title / episode info */}
+              <div className="text-center space-y-2">
+                <h2 className="text-white font-black text-xl tracking-tight max-w-[320px] truncate drop-shadow-xl">
+                  {title}
+                </h2>
                 {type === 'tv' && (
-                  <p className="text-[#E50914] text-xs font-black uppercase tracking-widest mt-1">
-                    S{currentSeason} • E{currentEpisode}
+                  <p className="text-[#E50914] text-[11px] font-black uppercase tracking-[0.2em]">
+                    Season {currentSeason} &middot; Episode {currentEpisode}
                   </p>
                 )}
-                <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-2">
-                  {activeSource.name}...
-                </p>
+                {currentEpData?.name && (
+                  <p className="text-white/35 text-xs font-medium truncate max-w-[280px]">
+                    {currentEpData.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Animated red progress bar */}
+              <div className="w-40 h-[2px] bg-white/8 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-[#E50914] rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '85%' }}
+                  transition={{ duration: 3.5, ease: [0.4, 0, 0.2, 1] }}
+                />
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Top controls */}
+      {/* ── Error state ─────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {loadError && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center gap-6"
+          >
+            <div className="text-center space-y-2">
+              <p className="text-white/40 text-xs font-black uppercase tracking-widest">
+                Failed to load
+              </p>
+              <h2 className="text-white font-black text-2xl tracking-tight">{title}</h2>
+            </div>
+            <button
+              onClick={handleReload}
+              className="flex items-center gap-2 px-6 py-3 bg-[#E50914] rounded-full text-sm font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" /> Try Again
+            </button>
+            <button
+              onClick={onClose}
+              className="text-white/40 text-xs font-bold hover:text-white transition-colors"
+            >
+              Go back
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Netflix-style top bar ────────────────────────────────────────────── */}
       <AnimatePresence>
         {controlsVisible && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.2 }}
-            className="absolute top-0 left-0 right-0 z-50 px-4 md:px-8 pt-4 pb-16
-                       bg-gradient-to-b from-black/80 via-black/30 to-transparent pointer-events-none"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-0 left-0 right-0 z-50 pointer-events-none"
           >
-            <div className="flex items-center justify-between pointer-events-auto">
+            {/* Top vignette */}
+            <div className="h-36 bg-gradient-to-b from-black/95 via-black/50 to-transparent" />
+
+            <div className="absolute top-0 left-0 right-0 flex items-start justify-between px-6 md:px-10 pt-5 pointer-events-auto">
+              {/* Back + title */}
               <div className="flex items-center gap-3 min-w-0">
-                <button onClick={onClose}
-                  className="flex-shrink-0 p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10
-                             hover:bg-white/10 transition-all group shadow-xl"
+                <button
+                  onClick={onClose}
+                  className="flex-shrink-0 p-2 rounded-full hover:bg-white/10 transition-all group"
                 >
-                  <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+                  <ChevronLeft className="w-6 h-6 text-white group-hover:-translate-x-0.5 transition-transform" />
                 </button>
+
                 <div className="min-w-0">
-                  <h2 className="font-black text-base md:text-lg tracking-tight truncate max-w-[200px] md:max-w-lg drop-shadow-2xl">
-                    {title}
-                  </h2>
-                  {type === 'tv' && (
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-[#E50914] font-black uppercase tracking-widest">
-                        S{currentSeason} • E{currentEpisode}
-                      </span>
-                      {currentEpData && (
-                        <>
-                          <span className="w-1 h-1 rounded-full bg-white/20 flex-shrink-0" />
-                          <span className="text-[10px] text-white/40 font-bold truncate max-w-[100px] md:max-w-xs">
-                            {currentEpData.name}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                  {/* Netflix pattern: dim parent above, bright episode below */}
+                  {type === 'tv' ? (
+                    <>
+                      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-0.5 truncate max-w-[180px] md:max-w-sm">
+                        {title}
+                      </p>
+                      <h2 className="text-base md:text-lg font-black text-white tracking-tight truncate max-w-[200px] md:max-w-md drop-shadow-2xl">
+                        {currentEpData?.name || `Episode ${currentEpisode}`}
+                      </h2>
+                      <p className="text-[10px] text-[#E50914] font-black uppercase tracking-widest mt-0.5">
+                        S{currentSeason} &middot; E{currentEpisode}
+                      </p>
+                    </>
+                  ) : (
+                    <h2 className="text-base md:text-xl font-black text-white tracking-tight truncate max-w-[220px] md:max-w-lg drop-shadow-2xl">
+                      {title}
+                    </h2>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Server selector */}
-                <button
-                  onClick={() => { setShowServerPanel(!showServerPanel); setShowEpisodeList(false); }}
-                  className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black
-                             uppercase tracking-widest transition-all border backdrop-blur-xl shadow-xl ${
-                    showServerPanel ? 'bg-[#E50914] border-[#E50914] text-white' : 'bg-black/50 border-white/10 hover:bg-white/10 text-white'
-                  }`}
-                >
-                  <Server className="w-3.5 h-3.5" />
-                  {activeSource.name}
-                </button>
-
+              {/* Right controls */}
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {type === 'tv' && (
                   <button
-                    onClick={() => { setShowEpisodeList(!showEpisodeList); setShowServerPanel(false); }}
+                    onClick={() => setShowEpisodeList(!showEpisodeList)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black
-                               uppercase tracking-widest transition-all border backdrop-blur-xl shadow-xl ${
-                      showEpisodeList ? 'bg-[#E50914] border-[#E50914] text-white' : 'bg-black/50 border-white/10 hover:bg-white/10 text-white'
+                                uppercase tracking-widest transition-all border backdrop-blur-xl shadow-xl ${
+                      showEpisodeList
+                        ? 'bg-[#E50914] border-[#E50914] text-white'
+                        : 'bg-black/50 border-white/10 hover:bg-white/10 text-white'
                     }`}
                   >
                     <List className="w-3.5 h-3.5" />
@@ -273,16 +395,20 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                   </button>
                 )}
 
-                <button onClick={handleFullscreen}
+                <button
+                  onClick={handleFullscreen}
                   className="p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-xl"
                 >
-                  {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+                  {isFullscreen
+                    ? <Minimize2 className="w-5 h-5 text-white" />
+                    : <Maximize className="w-5 h-5 text-white" />}
                 </button>
 
-                <button onClick={onClose}
+                <button
+                  onClick={onClose}
                   className="p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-xl"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
@@ -290,129 +416,129 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Bottom mobile server row */}
-      <AnimatePresence>
-        {controlsVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }} transition={{ duration: 0.2 }}
-            className="absolute bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-16
-                       bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none"
-          >
-            <div className="flex md:hidden items-center gap-2 justify-center pointer-events-auto mb-2">
-              {sources.map((s, i) => (
-                <button key={i} onClick={() => handleSourceChange(i)}
-                  className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border ${
-                    i === activeSourceIdx
-                      ? 'bg-[#E50914] border-[#E50914] text-white shadow-lg'
-                      : 'bg-black/60 border-white/15 text-white/60 hover:border-white/30 hover:text-white'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Server panel dropdown */}
-      <AnimatePresence>
-        {showServerPanel && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            className="absolute top-20 right-4 md:right-8 z-[60] w-56
-                       bg-[#141414]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
-          >
-            <div className="p-4 border-b border-white/5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#525252]">Select Server</p>
-            </div>
-            {sources.map((s, i) => (
-              <button key={i} onClick={() => handleSourceChange(i)}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-all hover:bg-white/5 ${i === activeSourceIdx ? 'bg-white/5' : ''}`}
-              >
-                <div className="w-2 h-2 rounded-full flex-shrink-0"
-                     style={{ backgroundColor: i === activeSourceIdx ? s.color : 'rgba(255,255,255,0.2)' }} />
-                <span className={`text-sm font-bold ${i === activeSourceIdx ? 'text-white' : 'text-[#a3a3a3]'}`}>
-                  {s.name}
-                </span>
-                {i === activeSourceIdx && (
-                  <span className="ml-auto text-[9px] font-black uppercase tracking-widest px-2 py-0.5
-                                   bg-[#E50914]/20 text-[#E50914] rounded-full">Active</span>
-                )}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main iframe */}
+      {/* ── Main: Videasy iframe + ad shields ───────────────────────────────── */}
       <div className="flex-1 relative bg-black">
+        {/*
+          ✅  NO sandbox — Videasy detects it and stops playing.
+
+          Ad blocking is done via:
+            • window.open override (above) — kills popup/tab-hijack ads
+            • referrerPolicy="no-referrer"  — hides your site from ad trackers
+            • Edge shield divs (below)      — intercept banner-ad click areas
+            • beforeunload listener (above) — blocks top-frame navigation
+        */}
         <iframe
-          key={activeSource.url}
+          key={`${tmdbId}-${type}-${currentSeason}-${currentEpisode}`}
           ref={iframeRef}
-          src={activeSource.url}
+          src={videasyUrl}
           className="w-full h-full border-none"
           allowFullScreen
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write"
-          
-          title="Video Player"
-          onLoad={() => setIsLoading(false)}
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+          referrerPolicy="no-referrer"
+          title={`${title}${type === 'tv' ? ` S${currentSeason}E${currentEpisode}` : ''}`}
+          onLoad={() => setTimeout(() => setIsLoading(false), 600)}
+          onError={() => { setIsLoading(false); setLoadError(true); }}
         />
 
-        {/* Episode sidebar */}
+        {/*
+          Edge shields — thin invisible divs on top/bottom/sides of the iframe.
+          They sit above the iframe (z-30) and intercept clicks in the regions
+          where ad banners typically appear, preventing accidental redirects.
+          The CENTER of the screen is intentionally left open so the Videasy
+          player controls (play, pause, seek) work normally.
+          Clicking a shield just shows our controls instead of following an ad.
+        */}
+        {!controlsVisible && (
+          <>
+            {/* Top edge — top-banner ads */}
+            <div
+              className="absolute top-0 left-0 right-0 h-16 z-30 cursor-default"
+              onClick={resetHideTimer}
+            />
+            {/* Bottom edge — bottom-banner / pre-roll ads */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-16 z-30 cursor-default"
+              onClick={resetHideTimer}
+            />
+            {/* Left edge */}
+            <div
+              className="absolute top-16 bottom-16 left-0 w-12 z-30 cursor-default"
+              onClick={resetHideTimer}
+            />
+            {/* Right edge */}
+            <div
+              className="absolute top-16 bottom-16 right-0 w-12 z-30 cursor-default"
+              onClick={resetHideTimer}
+            />
+          </>
+        )}
+
+        {/* ── Episode sidebar ────────────────────────────────────────────────── */}
         <AnimatePresence>
           {showEpisodeList && type === 'tv' && (
             <motion.div
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-              className="absolute right-0 top-0 bottom-0 w-full md:w-[460px]
-                         bg-[#0a0a0a]/98 backdrop-blur-3xl border-l border-white/10
-                         z-[60] flex flex-col shadow-[-20px_0_60px_rgba(0,0,0,0.6)]"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="absolute right-0 top-0 bottom-0 w-full md:w-[440px]
+                         bg-[#0a0a0a]/98 backdrop-blur-3xl border-l border-white/8
+                         z-[60] flex flex-col shadow-[-20px_0_60px_rgba(0,0,0,0.7)]"
             >
-              <div className="p-6 border-b border-white/5 space-y-5">
+              {/* Sidebar header */}
+              <div className="p-6 border-b border-white/5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-black tracking-tight uppercase italic text-[#E50914]">Episodes</h3>
-                  <button onClick={() => setShowEpisodeList(false)}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors border border-white/5"
+                  <h3 className="text-lg font-black tracking-tight text-white uppercase italic">
+                    Episodes
+                  </h3>
+                  <button
+                    onClick={() => setShowEpisodeList(false)}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4 text-white" />
                   </button>
                 </div>
 
+                {/* Episode search */}
                 <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#525252]" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
                   <input
-                    type="text" placeholder="Search episodes..."
-                    value={episodeSearch} onChange={e => setEpisodeSearch(e.target.value)}
+                    type="text"
+                    placeholder="Search episodes..."
+                    value={episodeSearch}
+                    onChange={e => setEpisodeSearch(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5
-                               text-xs font-medium outline-none focus:border-[#E50914]/50 transition-all
-                               placeholder:text-[#525252]"
+                               text-xs font-medium text-white outline-none focus:border-[#E50914]/50
+                               transition-all placeholder:text-white/25"
                   />
                 </div>
 
+                {/* Season picker + auto-next toggle */}
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1">
                     <select
                       value={currentSeason}
-                      onChange={e => setCurrentSeason(Number(e.target.value))}
+                      onChange={e => { setCurrentSeason(Number(e.target.value)); setEpisodeSearch(''); }}
                       className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl
-                                 px-4 py-2.5 text-xs font-bold uppercase tracking-widest outline-none
-                                 focus:border-[#E50914]/50 transition-all pr-8 cursor-pointer"
+                                 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white
+                                 outline-none focus:border-[#E50914]/50 transition-all pr-8 cursor-pointer"
                     >
-                      {details?.seasons?.filter((s: any) => s.season_number > 0).map((s: any) => (
-                        <option key={s.id} value={s.season_number}>{s.name}</option>
-                      ))}
+                      {details?.seasons
+                        ?.filter((s: any) => s.season_number > 0)
+                        .map((s: any) => (
+                          <option key={s.id} value={s.season_number}>{s.name}</option>
+                        ))}
                     </select>
-                    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#525252] pointer-events-none rotate-90" />
+                    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none rotate-90" />
                   </div>
+
                   <button
                     onClick={() => setAutoNext(!autoNext)}
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-[10px]
                                font-black uppercase tracking-widest transition-all flex-shrink-0 ${
-                      autoNext ? 'bg-[#E50914]/10 border-[#E50914]/40 text-[#E50914]' : 'bg-white/5 border-white/10 text-[#525252]'
+                      autoNext
+                        ? 'bg-[#E50914]/10 border-[#E50914]/40 text-[#E50914]'
+                        : 'bg-white/5 border-white/10 text-white/30'
                     }`}
                   >
                     {autoNext ? <ToggleRight className="w-4 h-4" /> : <Toggle className="w-4 h-4" />}
@@ -421,24 +547,32 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+              {/* Episode cards */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-hide">
                 {filteredEpisodes?.map((ep: any) => {
                   const isActive = currentEpisode === ep.episode_number;
                   return (
                     <button
                       key={ep.id}
                       onClick={() => handleEpisodeChange(currentSeason, ep.episode_number)}
-                      className={`w-full flex gap-4 p-3 rounded-2xl transition-all border text-left group
-                                  relative overflow-hidden ${
+                      className={`w-full flex gap-4 p-3 rounded-2xl transition-all border text-left group ${
                         isActive
                           ? 'bg-[#E50914]/10 border-[#E50914]/30'
-                          : 'bg-white/3 border-transparent hover:bg-white/8 hover:border-white/15'
+                          : 'bg-white/3 border-transparent hover:bg-white/8 hover:border-white/10'
                       }`}
                     >
-                      <div className="relative flex-shrink-0 w-32 aspect-video rounded-xl overflow-hidden bg-white/5">
+                      {/* Thumbnail */}
+                      <div className="relative flex-shrink-0 w-28 aspect-video rounded-xl overflow-hidden bg-white/5">
                         <img
-                          src={ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : (backdropPath ? `https://image.tmdb.org/t/p/w780${backdropPath}` : '')}
-                          alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          src={
+                            ep.still_path
+                              ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
+                              : backdropPath
+                              ? `https://image.tmdb.org/t/p/w780${backdropPath}`
+                              : ''
+                          }
+                          alt=""
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                           referrerPolicy="no-referrer"
                         />
                         <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${
@@ -450,24 +584,26 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                         </div>
                         {isActive && (
                           <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#E50914] rounded text-[8px] font-black tracking-widest uppercase">
-                            Now
+                            Playing
                           </div>
                         )}
-                        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 bg-black/70 backdrop-blur-md rounded text-[9px] font-black">
+                        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 bg-black/70 backdrop-blur-md rounded text-[9px] font-black text-white">
                           E{ep.episode_number}
                         </div>
                       </div>
+
+                      {/* Info */}
                       <div className="flex-1 min-w-0 py-0.5">
                         <h4 className={`text-sm font-bold tracking-tight truncate mb-1 transition-colors ${
                           isActive ? 'text-[#E50914]' : 'text-white'
                         }`}>
                           {ep.name}
                         </h4>
-                        <p className="text-[11px] text-[#a3a3a3] line-clamp-2 leading-relaxed">
+                        <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">
                           {ep.overview || 'No description available.'}
                         </p>
                         {ep.runtime && (
-                          <span className="inline-block mt-2 text-[9px] font-black text-[#525252] bg-white/5 px-2 py-0.5 rounded uppercase tracking-tighter">
+                          <span className="inline-block mt-2 text-[9px] font-black text-white/25 bg-white/5 px-2 py-0.5 rounded uppercase tracking-tighter">
                             {ep.runtime} min
                           </span>
                         )}
