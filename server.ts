@@ -25,24 +25,9 @@ async function startServer() {
   // Fix express-rate-limit trust proxy warning
   app.set('trust proxy', 1);
 
-  // Security & Middleware (Cloudflare-style Protection)
+  // Security & Middleware
   app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://*.pages.dev", "https://*.clerk.accounts.dev"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        imgSrc: ["'self'", "data:", "https://*.tmdb.org", "https://*.picsum.photos", "https://*.clerk.com", "https://image.tmdb.org"],
-        connectSrc: ["'self'", "https://api.themoviedb.org", "https://*.clerk.accounts.dev", "https://api.videasy.net"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        objectSrc: ["'none'"],
-        mediaSrc: ["'self'", "https://*.videasy.net"],
-        frameSrc: ["'self'", "https://player.videasy.net", "https://vidsrc.to", "https://multiembed.mov", "https://www.2embed.cc"],
-        upgradeInsecureRequests: [],
-      },
-    },
-    frameguard: { action: 'deny' }, // Prevent clickjacking
-    referrerPolicy: { policy: 'no-referrer' },
+    contentSecurityPolicy: false, // Disable for development to allow Vite & Embeds
   }));
   app.use(cors());
   app.use(express.json());

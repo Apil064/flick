@@ -1,12 +1,9 @@
-// src/components/EmbedPlayer.tsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  X, ChevronLeft, List, Play, ChevronRight,
-  Maximize, Search, ToggleLeft as Toggle, ToggleRight,
-  RefreshCw, Minimize2,
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, ChevronLeft, List, Play, ChevronRight, Maximize, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
+import { CustomVideoPlayer } from './CustomVideoPlayer';
+import axios from 'axios';
 
 interface EmbedPlayerProps {
   tmdbId: string;
@@ -20,398 +17,277 @@ interface EmbedPlayerProps {
   startTime?: number;
 }
 
-// ── Videasy URL builder ──────────────────────────────────────────────────────
-const buildVideasyUrl = (
-  tmdbId: string,
-  type: 'movie' | 'tv',
-  season: number,
-  episode: number,
-  title?: string,
-  episodeName?: string,
-) => {
-  const base =
-    type === 'movie'
-      ? `https://player.videasy.net/movie/${tmdbId}`
-      : `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`;
-
-  const params = new URLSearchParams({
-    color: 'E50914',           // red accent colour
-    nextEpisode: '1',          // show next-episode button
-    autoplayNextEpisode: '1',  // auto-advance episodes
-    autoplay: '1',             // force autoplay
-    autoPlay: '1',             // double check param
-    muted: '1',                // standard autoplay requires muting in many browsers
-    theme: 'netflix',          // Netflix-style overlay
-    title: title || '',        // Pass title for overlay
-  });
-
-  if (type === 'tv' && episodeName) {
-    params.append('episode_name', episodeName);
-  }
-
-  return `${base}?${params.toString()}`;
-};
-
-export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
-  tmdbId,
-  type,
-  season = 1,
-  episode = 1,
-  title,
-  onClose,
-  posterPath,
-  backdropPath,
-  startTime = 0,
+export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({ 
+  tmdbId, type, season = 1, episode = 1, title, onClose, posterPath, backdropPath, startTime = 0 
 }) => {
-  const [currentSeason, setCurrentSeason]     = useState(season);
-  const [currentEpisode, setCurrentEpisode]   = useState(episode);
+  const [currentSeason, setCurrentSeason] = useState(season);
+  const [currentEpisode, setCurrentEpisode] = useState(episode);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
-  const [episodeSearch, setEpisodeSearch]     = useState('');
-  const [autoNext, setAutoNext]               = useState(true);
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const [isFullscreen, setIsFullscreen]       = useState(false);
-  const [loadError, setLoadError]             = useState(false);
-
-  const iframeRef    = useRef<HTMLIFrameElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hideTimer    = useRef<ReturnType<typeof setTimeout>>();
-
-  const { data: details }       = useMovieDetails(type, tmdbId);
+  const [episodeSearch, setEpisodeSearch] = useState('');
+  const [autoNext, setAutoNext] = useState(true);
+  const [videoSource, setVideoSource] = useState<string | null>(null);
+  const [isFetchingSource, setIsFetchingSource] = useState(true);
+  const [debugCustom, setDebugCustom] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  const { data: details } = useMovieDetails(type, tmdbId);
   const { data: seasonDetails } = useTVSeason(tmdbId, currentSeason);
   const { mutate: saveProgress } = useSaveProgress();
   const [localProgress, setLocalProgress] = useState(startTime);
+  const [localDuration, setLocalDuration] = useState(0);
 
-  const currentEpData = seasonDetails?.episodes?.find(
-    (e: any) => e.episode_number === currentEpisode,
-  );
-
-  const videasyUrl = buildVideasyUrl(
-    tmdbId, 
-    type, 
-    currentSeason, 
-    currentEpisode, 
-    title, 
-    currentEpData?.name
-  );
-
-  // ── Ad / redirect blocking (Monkey Patching) ───────────────────────────
+  // Fetch M3U8 source
   useEffect(() => {
-    const originalOpen = window.open.bind(window);
-
-    // ✅ Monkey Patch window.open (Blocks almost all popups/redirects)
-    (window as any).open = (...args: Parameters<typeof window.open>) => {
-      const url = args[0]?.toString() ?? '';
-      const isAllowed = url.includes('videasy.net') || url.includes('themoviedb.org') || url === 'about:blank' || !url;
-      
-      if (isAllowed) return originalOpen(...args);
-      
-      console.warn('[FlickGuard] Blocked redirect to:', url);
-      return { 
-        focus: () => {}, 
-        close: () => {}, 
-        location: { href: '' },
-        closed: true
-      };
-    };
-
-    // ✅ Stop Top-Frame Navigation (The "Cloudflare" approach)
-    // We override window.onbeforeunload and also monitor for unauthorized location changes
-    const protectLocation = () => {
+    const fetchSource = async () => {
+      console.log('Fetching source for:', tmdbId, type);
+      setIsFetchingSource(true);
       try {
-        const originalLocation = window.location;
-        // Some browsers allow defining a getter/setter on location, though it's dangerous
-        // Instead we use a reliable timer to check if we've been moved
-        const interval = setInterval(() => {
-          if (window.location !== originalLocation) {
-             console.warn('[FlickGuard] Detected unauthorized navigation attempt.');
+        const response = await axios.get(`/api/embed/vidking-source`, {
+          params: {
+            id: tmdbId,
+            type,
+            season: currentSeason,
+            episode: currentEpisode
           }
-        }, 500);
-        return () => clearInterval(interval);
-      } catch (e) {
-        return () => {};
+        });
+        if (response.data.source) {
+          setVideoSource(response.data.source);
+        } else {
+          setVideoSource(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch video source:', error);
+        setVideoSource(null);
+      } finally {
+        setIsFetchingSource(false);
       }
     };
 
-    const cleanupLocation = protectLocation();
+    fetchSource();
+  }, [tmdbId, type, currentSeason, currentEpisode]);
 
-    // ✅ Intercept Videasy messages
-    const handleMessage = (e: MessageEvent) => {
-      if (!e.origin.includes('videasy.net')) return;
-      // Handle player events here if needed
-    };
-
-    window.addEventListener('message', handleMessage);
-
-    return () => {
-      (window as any).open = originalOpen;
-      window.removeEventListener('message', handleMessage);
-      cleanupLocation();
-    };
-  }, [loadError]);
-
-  // ── Progress tracking ────────────────────────────────────────────────────
+  // Initialize localProgress correctly when startTime changes
   useEffect(() => {
     setLocalProgress(startTime);
   }, [startTime, tmdbId, currentSeason, currentEpisode]);
 
+  // Progress tracking for iframe fallback
   useEffect(() => {
-    const t = setInterval(() => setLocalProgress(p => p + 1), 1000);
-    return () => clearInterval(t);
-  }, [tmdbId, currentSeason, currentEpisode]);
+    if (videoSource) return; // Custom player handles its own progress
+    const interval = setInterval(() => {
+      setLocalProgress(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [tmdbId, currentSeason, currentEpisode, videoSource]);
+
+  // Auto-next logic
+  useEffect(() => {
+    if (!autoNext || type !== 'tv' || !details || !seasonDetails) return;
+    
+    const duration = localDuration || (details?.runtime || 120) * 60;
+    // If we're near the end (e.g., last 30 seconds), check for next episode
+    if (localProgress >= duration - 30 && duration > 0) {
+      const nextEp = seasonDetails.episodes.find((e: any) => e.episode_number === currentEpisode + 1);
+      if (nextEp) {
+        handleEpisodeChange(currentSeason, nextEp.episode_number);
+        setLocalProgress(0);
+      } else {
+        // Check next season
+        const nextSeason = details.seasons.find((s: any) => s.season_number === currentSeason + 1);
+        if (nextSeason) {
+          setCurrentSeason(nextSeason.season_number);
+          setCurrentEpisode(1);
+          setLocalProgress(0);
+        }
+      }
+    }
+  }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason, localDuration]);
 
   useEffect(() => {
-    const duration =
-      type === 'movie'
-        ? (details?.runtime || 120) * 60
-        : (details?.episode_run_time?.[0] || 45) * 60;
+    const duration = localDuration || (type === 'movie' 
+      ? (details?.runtime || 120) * 60 
+      : (details?.episode_run_time?.[0] || 45) * 60);
 
-    const save = () =>
+    const saveInterval = setInterval(() => {
       saveProgress({
         tmdb_id: tmdbId,
         media_type: type,
-        title,
-        poster_path:
-          posterPath ||
-          details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-        backdrop_path:
-          backdropPath ||
-          details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
+        title: title,
+        poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+        backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
         season: type === 'tv' ? currentSeason : 0,
         episode: type === 'tv' ? currentEpisode : 0,
-        progress_seconds: localProgress,
-        duration_seconds: duration,
+        progress_seconds: Math.floor(localProgress),
+        duration_seconds: Math.floor(duration)
       });
+    }, 30000);
 
-    const interval = setInterval(save, 30_000);
-    window.addEventListener('beforeunload', save);
+    const handleBeforeUnload = () => {
+      saveProgress({
+        tmdb_id: tmdbId,
+        media_type: type,
+        title: title,
+        poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
+        backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
+        season: type === 'tv' ? currentSeason : 0,
+        episode: type === 'tv' ? currentEpisode : 0,
+        progress_seconds: Math.floor(localProgress),
+        duration_seconds: Math.floor(duration)
+      });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('beforeunload', save);
-      save();
+      clearInterval(saveInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload();
     };
-  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details, localProgress]);
+  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, details?.episode_run_time, localProgress, localDuration]);
 
-  // ── Controls auto-hide ───────────────────────────────────────────────────
-  const resetHideTimer = useCallback(() => {
-    setControlsVisible(true);
-    clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => {
-      if (!showEpisodeList) setControlsVisible(false);
-    }, 3500);
-  }, [showEpisodeList]);
+  const fallbackVideoUrl = type === 'movie'
+    ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
+    : `https://vidking.net/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?color=E50914`
 
   useEffect(() => {
-    resetHideTimer();
-    return () => clearTimeout(hideTimer.current);
-  }, [resetHideTimer]);
-
-  // ── Keyboard shortcuts ───────────────────────────────────────────────────
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showEpisodeList) setShowEpisodeList(false);
-        else onClose();
-      }
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, showEpisodeList]);
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
-  // ── Fullscreen sync ──────────────────────────────────────────────────────
-  useEffect(() => {
-    const h = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', h);
-    return () => document.removeEventListener('fullscreenchange', h);
-  }, []);
+  const handleFullscreen = () => {
+    if (iframeRef.current) {
+      iframeRef.current.requestFullscreen().catch(() => {
+        document.documentElement.requestFullscreen();
+      });
+    }
+  };
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
   const handleEpisodeChange = (s: number, e: number) => {
     setCurrentSeason(s);
     setCurrentEpisode(e);
     setLocalProgress(0);
-    setLoadError(false);
     if (window.innerWidth < 768) setShowEpisodeList(false);
   };
 
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
-    else document.exitFullscreen();
-  };
-
-  const handleReload = () => {
-    setLoadError(false);
-    if (iframeRef.current) iframeRef.current.src = videasyUrl;
-  };
-
-  const filteredEpisodes = seasonDetails?.episodes?.filter(
-    (ep: any) =>
-      ep.name.toLowerCase().includes(episodeSearch.toLowerCase()) ||
-      ep.episode_number.toString().includes(episodeSearch),
+  const filteredEpisodes = seasonDetails?.episodes?.filter((ep: any) => 
+    ep.name.toLowerCase().includes(episodeSearch.toLowerCase()) ||
+    ep.episode_number.toString() === episodeSearch
   );
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <motion.div
-      ref={containerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onMouseMove={resetHideTimer}
-      onTouchStart={resetHideTimer}
-      className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden select-none"
+      className="fixed inset-0 z-[200] bg-black flex flex-col overflow-hidden font-sans"
     >
-      {/* Movie Loading Overlay Removed as requested */}
-
-      {/* ── Error state ─────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {loadError && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center gap-6"
-          >
-            <div className="text-center space-y-2">
-              <p className="text-white/40 text-xs font-black uppercase tracking-widest">
-                Failed to load
-              </p>
-              <h2 className="text-white font-black text-2xl tracking-tight">{title}</h2>
-            </div>
-            <button
-              onClick={handleReload}
-              className="flex items-center gap-2 px-6 py-3 bg-[#E50914] rounded-full text-sm font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" /> Try Again
-            </button>
-            <button
-              onClick={onClose}
-              className="text-white/40 text-xs font-bold hover:text-white transition-colors"
-            >
-              Go back
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Netflix-style top bar ────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {controlsVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-0 left-0 right-0 z-50 pointer-events-none"
-          >
-            {/* Top vignette */}
-            <div className="h-36 bg-gradient-to-b from-black/95 via-black/50 to-transparent" />
-
-            <div className="absolute top-0 left-0 right-0 flex items-start justify-between px-6 md:px-10 pt-5 pointer-events-auto">
-              {/* Back + title */}
-              <div className="flex items-center gap-3 min-w-0 z-[70]">
+      {/* Video Container */}
+      <div className="flex-1 relative bg-black">
+        {(videoSource || debugCustom) ? (
+          <CustomVideoPlayer
+            key={`${tmdbId}-${currentSeason}-${currentEpisode}-${debugCustom}`}
+            source={debugCustom ? "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" : videoSource!}
+            title={title}
+            type={type}
+            season={currentSeason}
+            episode={currentEpisode}
+            details={details}
+            seasonDetails={seasonDetails}
+            startTime={startTime}
+            onClose={onClose}
+            onProgress={(p, d) => {
+              setLocalProgress(p);
+              setLocalDuration(d);
+            }}
+            onToggleEpisodeList={() => setShowEpisodeList(!showEpisodeList)}
+          />
+        ) : isFetchingSource ? (
+          <div className="w-full h-full flex items-center justify-center bg-black">
+            <div className="w-12 h-12 border-4 border-accent-red border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <>
+            {/* Top Bar (Only for iframe fallback) */}
+            <div className="absolute top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
+              <div className="flex items-center gap-6 pointer-events-auto">
                 <button
                   onClick={onClose}
-                  className="flex-shrink-0 p-2 rounded-full hover:bg-white/10 transition-all group pointer-events-auto"
+                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 group shadow-2xl"
                 >
-                  <ChevronLeft className="w-6 h-6 text-white group-hover:-translate-x-0.5 transition-transform" />
+                  <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
                 </button>
-
-                <div className="min-w-0">
-                  {/* Netflix pattern: dim parent above, bright episode below */}
-                  {type === 'tv' ? (
-                    <>
-                      <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-0.5 truncate max-w-[180px] md:max-w-sm">
-                        {title}
-                      </p>
-                      <h2 className="text-base md:text-lg font-black text-white tracking-tight truncate max-w-[200px] md:max-w-md drop-shadow-2xl">
-                        {currentEpData?.name || `Episode ${currentEpisode}`}
-                      </h2>
-                      <p className="text-[10px] text-[#E50914] font-black uppercase tracking-widest mt-0.5">
-                        S{currentSeason} &middot; E{currentEpisode}
-                      </p>
-                    </>
-                  ) : (
-                    <h2 className="text-base md:text-xl font-black text-white tracking-tight truncate max-w-[220px] md:max-w-lg drop-shadow-2xl">
-                      {title}
-                    </h2>
+                <div className="flex flex-col">
+                  <h2 className="text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[180px] md:max-w-lg">
+                    {title}
+                  </h2>
+                  {type === 'tv' && (
+                    <div className="flex items-center gap-2.5 mt-0.5">
+                      <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
+                        S{currentSeason} • E{currentEpisode}
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-white/20" />
+                      <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
+                        {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Right controls */}
-              <div className="flex items-center gap-2 flex-shrink-0 z-[70]">
+              <div className="flex items-center gap-4 pointer-events-auto">
                 {type === 'tv' && (
                   <button
                     onClick={() => setShowEpisodeList(!showEpisodeList)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black
-                                uppercase tracking-widest transition-all border backdrop-blur-xl shadow-xl pointer-events-auto ${
-                      showEpisodeList
-                        ? 'bg-[#E50914] border-[#E50914] text-white'
-                        : 'bg-black/50 border-white/10 hover:bg-white/10 text-white'
+                    className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all border backdrop-blur-xl shadow-2xl ${
+                      showEpisodeList 
+                        ? 'bg-accent-red border-accent-red text-white' 
+                        : 'bg-black/40 border-white/10 text-white hover:bg-white/10'
                     }`}
                   >
                     <List className="w-3.5 h-3.5" />
-                    <span className="hidden md:inline">Episodes</span>
+                    <span className="hidden md:inline">Browse Episodes</span>
                   </button>
                 )}
 
                 <button
                   onClick={handleFullscreen}
-                  className="p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-xl pointer-events-auto"
+                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
+                  title="Fullscreen"
                 >
-                  {isFullscreen
-                    ? <Minimize2 className="w-5 h-5 text-white" />
-                    : <Maximize className="w-5 h-5 text-white" />}
+                  <Maximize className="w-6 h-6" />
                 </button>
 
                 <button
                   onClick={onClose}
-                  className="p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-xl pointer-events-auto"
+                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
                 >
-                  <X className="w-5 h-5 text-white" />
+                  <X className="w-6 h-6" />
                 </button>
+
+                {/* Secret Debug Toggle */}
+                <button 
+                  onDoubleClick={() => setDebugCustom(!debugCustom)}
+                  className="opacity-0 w-4 h-4 absolute top-0 right-0 cursor-default"
+                />
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* ── Main: Videasy iframe + ad shields ───────────────────────────────── */}
-      <div className="flex-1 relative bg-black">
-        {/*
-          ✅  Method 1: Invisible Wall (CSP + Restricted Sandbox)
-          We omit 'allow-top-navigation' and 'allow-popups' to kill redirects.
-          'allow-same-origin' is kept so Videasy doesn't detect a restricted sandbox.
-        */}
-        <iframe
-          key={`${tmdbId}-${type}-${currentSeason}-${currentEpisode}`}
-          ref={iframeRef}
-          src={videasyUrl}
-          className="w-full h-full border-none"
-          allowFullScreen
-          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
-          referrerPolicy="no-referrer"
-          title={`${title}${type === 'tv' ? ` S${currentSeason}E${currentEpisode}` : ''}`}
-          onError={() => setLoadError(true)}
-        />
-
-        {/*
-          ✅ Full-Screen Shield (Ad-Prevention Layer)
-          When controls are hidden, this invisible layer covers the entire iframe.
-          It intercepts ALL clicks/taps, preventing them from reaching the iframe's
-          internal ads (like click-jacking overlays).
-          The first tap anywhere will toggle the controls instead of triggering an ad.
-        */}
-        {!controlsVisible && (
-          <div
-            className="absolute inset-0 z-30 cursor-pointer bg-transparent"
-            onClick={(e) => {
-              e.stopPropagation();
-              resetHideTimer();
-            }}
-          />
+            <iframe
+              ref={iframeRef}
+              src={fallbackVideoUrl}
+              className="w-full h-full border-none"
+              allowFullScreen
+              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
+              title="Video Player"
+            />
+          </>
         )}
 
-        {/* ── Episode sidebar ────────────────────────────────────────────────── */}
+        {/* Episode Sidebar */}
         <AnimatePresence>
           {showEpisodeList && type === 'tv' && (
             <motion.div
@@ -419,132 +295,110 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="absolute right-0 top-0 bottom-0 w-full md:w-[440px]
-                         bg-[#0a0a0a]/98 backdrop-blur-3xl border-l border-white/8
-                         z-[60] flex flex-col shadow-[-20px_0_60px_rgba(0,0,0,0.7)]"
+              className="absolute right-0 top-0 bottom-0 w-full md:w-[500px] bg-bg-primary/98 backdrop-blur-3xl border-l border-white/10 z-[160] flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.5)]"
             >
-              {/* Sidebar header */}
-              <div className="p-6 border-b border-white/5 space-y-4">
+              <div className="p-8 border-b border-white/5 space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-black tracking-tight text-white uppercase italic">
-                    Episodes
-                  </h3>
-                  <button
+                  <h3 className="text-2xl font-black tracking-tighter uppercase italic text-accent-red">Episodes</h3>
+                  <button 
                     onClick={() => setShowEpisodeList(false)}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors border border-white/5"
                   >
-                    <X className="w-4 h-4 text-white" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Episode search */}
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-                  <input
-                    type="text"
-                    placeholder="Search episodes..."
-                    value={episodeSearch}
-                    onChange={e => setEpisodeSearch(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5
-                               text-xs font-medium text-white outline-none focus:border-[#E50914]/50
-                               transition-all placeholder:text-white/25"
-                  />
-                </div>
-
-                {/* Season picker + auto-next toggle */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <div className="relative flex-1">
-                    <select
-                      value={currentSeason}
-                      onChange={e => { setCurrentSeason(Number(e.target.value)); setEpisodeSearch(''); }}
-                      className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl
-                                 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white
-                                 outline-none focus:border-[#E50914]/50 transition-all pr-8 cursor-pointer"
-                    >
-                      {details?.seasons
-                        ?.filter((s: any) => s.season_number > 0)
-                        .map((s: any) => (
-                          <option key={s.id} value={s.season_number}>{s.name}</option>
-                        ))}
-                    </select>
-                    <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none rotate-90" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+                    <input 
+                      type="text"
+                      placeholder="Search episodes..."
+                      value={episodeSearch}
+                      onChange={(e) => setEpisodeSearch(e.target.value)}
+                      className="w-full bg-bg-secondary border border-white/10 rounded-xl pl-10 pr-4 py-2 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-accent-red transition-all"
+                    />
                   </div>
+                  <div className="flex items-center gap-2 bg-bg-secondary border border-white/10 rounded-xl px-4 py-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">Auto Next</span>
+                    <button onClick={() => setAutoNext(!autoNext)} className="text-accent-red">
+                      {autoNext ? <ToggleRight className="w-5 h-5" /> : <Toggle className="w-5 h-5 opacity-40" />}
+                    </button>
+                  </div>
+                </div>
 
-                  <button
-                    onClick={() => setAutoNext(!autoNext)}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-[10px]
-                               font-black uppercase tracking-widest transition-all flex-shrink-0 ${
-                      autoNext
-                        ? 'bg-[#E50914]/10 border-[#E50914]/40 text-[#E50914]'
-                        : 'bg-white/5 border-white/10 text-white/30'
-                    }`}
-                  >
-                    {autoNext ? <ToggleRight className="w-4 h-4" /> : <Toggle className="w-4 h-4" />}
-                    Auto
-                  </button>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <select 
+                      value={currentSeason}
+                      onChange={(e) => setCurrentSeason(Number(e.target.value))}
+                      className="appearance-none bg-bg-secondary border border-white/10 rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest outline-none focus:border-accent-red transition-all pr-12 cursor-pointer"
+                    >
+                      {details?.seasons?.filter((s: any) => s.season_number > 0).map((s: any) => (
+                        <option key={s.id} value={s.season_number}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none rotate-90" />
+                  </div>
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                    {filteredEpisodes?.length || 0} Episodes
+                  </span>
                 </div>
               </div>
 
-              {/* Episode cards */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-hide">
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-hide">
                 {filteredEpisodes?.map((ep: any) => {
                   const isActive = currentEpisode === ep.episode_number;
                   return (
                     <button
                       key={ep.id}
                       onClick={() => handleEpisodeChange(currentSeason, ep.episode_number)}
-                      className={`w-full flex gap-4 p-3 rounded-2xl transition-all border text-left group ${
-                        isActive
-                          ? 'bg-[#E50914]/10 border-[#E50914]/30'
-                          : 'bg-white/3 border-transparent hover:bg-white/8 hover:border-white/10'
+                      className={`w-full flex gap-5 p-4 rounded-3xl transition-all border text-left group relative overflow-hidden ${
+                        isActive 
+                          ? 'bg-accent-red/10 border-accent-red/50 shadow-[0_0_30px_rgba(229,9,20,0.1)]' 
+                          : 'bg-white/5 border-transparent hover:bg-white/10 hover:border-white/20'
                       }`}
                     >
-                      {/* Thumbnail */}
-                      <div className="relative flex-shrink-0 w-28 aspect-video rounded-xl overflow-hidden bg-white/5">
+                      <div className="relative flex-shrink-0 w-36 md:w-44 aspect-video rounded-2xl overflow-hidden bg-bg-secondary shadow-lg">
                         <img
-                          src={
-                            ep.still_path
-                              ? `https://image.tmdb.org/t/p/w300${ep.still_path}`
-                              : backdropPath
-                              ? `https://image.tmdb.org/t/p/w780${backdropPath}`
-                              : ''
-                          }
+                          src={ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : details?.backdrop_url}
                           alt=""
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                           referrerPolicy="no-referrer"
                         />
-                        <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${
-                          isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                        }`}>
-                          <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                            <Play className="w-4 h-4 fill-white text-white ml-0.5" />
+                        <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center">
+                            <Play className="w-5 h-5 fill-white text-white" />
                           </div>
                         </div>
                         {isActive && (
-                          <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#E50914] rounded text-[8px] font-black tracking-widest uppercase">
-                            Playing
+                          <div className="absolute top-2 left-2 px-2 py-0.5 bg-accent-red rounded-md text-[8px] font-black tracking-widest uppercase shadow-lg">
+                            Watching
                           </div>
                         )}
-                        <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 bg-black/70 backdrop-blur-md rounded text-[9px] font-black text-white">
-                          E{ep.episode_number}
+                        <div className="absolute bottom-3 right-3 px-2 py-1 bg-black/70 backdrop-blur-md rounded-lg text-[10px] font-black tracking-tighter">
+                          EP {ep.episode_number}
                         </div>
                       </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0 py-0.5">
-                        <h4 className={`text-sm font-bold tracking-tight truncate mb-1 transition-colors ${
-                          isActive ? 'text-[#E50914]' : 'text-white'
-                        }`}>
+                      
+                      <div className="flex-1 min-w-0 py-1">
+                        <h4 className={`text-sm font-black tracking-tight truncate mb-1.5 ${isActive ? 'text-accent-red' : 'text-white'}`}>
                           {ep.name}
                         </h4>
-                        <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">
-                          {ep.overview || 'No description available.'}
+                        <p className="text-[11px] text-text-secondary line-clamp-2 leading-relaxed font-medium opacity-80">
+                          {ep.overview || "No description available for this episode."}
                         </p>
-                        {ep.runtime && (
-                          <span className="inline-block mt-2 text-[9px] font-black text-white/25 bg-white/5 px-2 py-0.5 rounded uppercase tracking-tighter">
-                            {ep.runtime} min
+                        <div className="flex items-center gap-4 mt-3">
+                          <span className="text-[10px] font-black text-text-muted flex items-center gap-1.5 bg-white/5 px-2 py-0.5 rounded-md">
+                            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                            {ep.vote_average?.toFixed(1) || 'N/A'}
                           </span>
-                        )}
+                          <span className="text-[10px] font-black text-text-muted bg-white/5 px-2 py-0.5 rounded-md uppercase tracking-tighter">
+                            {ep.runtime ? `${ep.runtime} MIN` : 'N/A'}
+                          </span>
+                        </div>
                       </div>
                     </button>
                   );
@@ -557,3 +411,9 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     </motion.div>
   );
 };
+
+const Star = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+  </svg>
+);

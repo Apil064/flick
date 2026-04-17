@@ -127,9 +127,9 @@ export const useTVSeason = (tvId: string, seasonNumber: number) => useQuery({
 });
 
 export const useWatchlist = () => {
-  const { userId, isLoaded } = useAuth();
+  const { userId } = useAuth();
   return useQuery({
-    queryKey: ['watchlist', userId],
+    queryKey: ['watchlist'],
     queryFn: async () => {
       const response = await API.get('/user/watchlist');
       return response.data.map((item: any) => ({
@@ -139,8 +139,7 @@ export const useWatchlist = () => {
         backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
       }));
     },
-    enabled: isLoaded && !!userId,
-    retry: 2,
+    enabled: !!userId,
   });
 };
 
@@ -193,9 +192,9 @@ export const useRemoveFromWatchlist = () => {
 };
 
 export const useContinueWatching = () => {
-  const { userId, isLoaded } = useAuth();
+  const { userId } = useAuth();
   return useQuery({
-    queryKey: ['continue-watching', userId],
+    queryKey: ['continue-watching'],
     queryFn: async () => {
       const response = await API.get('/user/continue-watching');
       return response.data.map((item: any) => ({
@@ -205,15 +204,14 @@ export const useContinueWatching = () => {
         backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
       }));
     },
-    enabled: isLoaded && !!userId,
-    retry: 2,
+    enabled: !!userId,
   });
 };
 
 export const useWatchHistory = () => {
-  const { userId, isLoaded } = useAuth();
+  const { userId } = useAuth();
   return useQuery({
-    queryKey: ['watch-history', userId],
+    queryKey: ['watch-history'],
     queryFn: async () => {
       const response = await API.get('/user/history');
       return response.data.map((item: any) => ({
@@ -223,8 +221,7 @@ export const useWatchHistory = () => {
         backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
       }));
     },
-    enabled: isLoaded && !!userId,
-    retry: 2,
+    enabled: !!userId,
   });
 };
 
