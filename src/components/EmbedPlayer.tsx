@@ -26,6 +26,8 @@ const buildVideasyUrl = (
   type: 'movie' | 'tv',
   season: number,
   episode: number,
+  title?: string,
+  episodeName?: string,
 ) => {
   const base =
     type === 'movie'
@@ -37,7 +39,13 @@ const buildVideasyUrl = (
     nextEpisode: '1',          // show next-episode button
     autoplayNextEpisode: '1',  // auto-advance episodes
     autoplay: '1',
+    theme: 'netflix',          // Netflix-style overlay
+    title: title || '',        // Pass title for overlay
   });
+
+  if (type === 'tv' && episodeName) {
+    params.append('episode_name', episodeName);
+  }
 
   return `${base}?${params.toString()}`;
 };
@@ -72,7 +80,18 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const { mutate: saveProgress } = useSaveProgress();
   const [localProgress, setLocalProgress] = useState(startTime);
 
-  const videasyUrl = buildVideasyUrl(tmdbId, type, currentSeason, currentEpisode);
+  const currentEpData = seasonDetails?.episodes?.find(
+    (e: any) => e.episode_number === currentEpisode,
+  );
+
+  const videasyUrl = buildVideasyUrl(
+    tmdbId, 
+    type, 
+    currentSeason, 
+    currentEpisode, 
+    title, 
+    currentEpData?.name
+  );
 
   // ── Ad / redirect blocking (Monkey Patching) ───────────────────────────
   useEffect(() => {
@@ -220,10 +239,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     (ep: any) =>
       ep.name.toLowerCase().includes(episodeSearch.toLowerCase()) ||
       ep.episode_number.toString().includes(episodeSearch),
-  );
-
-  const currentEpData = seasonDetails?.episodes?.find(
-    (e: any) => e.episode_number === currentEpisode,
   );
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -436,7 +451,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
           src={videasyUrl}
           className="w-full h-full border-none"
           allowFullScreen
-          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen"
           referrerPolicy="no-referrer"
           title={`${title}${type === 'tv' ? ` S${currentSeason}E${currentEpisode}` : ''}`}
           onLoad={() => setTimeout(() => setIsLoading(false), 600)}
