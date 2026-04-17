@@ -74,37 +74,40 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
 
   const videasyUrl = buildVideasyUrl(tmdbId, type, currentSeason, currentEpisode);
 
-  // ── Ad / redirect blocking (no sandbox needed) ───────────────────────────
-  // Strategy:
-  //  1. Override window.open  → kills popup ads
-  //  2. Intercept beforeunload → prevents top-frame navigation hijacks
-  //  3. Edge shields (below)  → block accidental banner-ad clicks
-  //  4. referrerPolicy="no-referrer" on iframe → hides origin from ad networks
+  // ── Ad / redirect blocking (Monkey Patching) ───────────────────────────
   useEffect(() => {
     const originalOpen = window.open.bind(window);
 
-    // Block any popup that isn't explicitly opened by our own code.
-    // Videasy itself uses postMessage, not window.open, so this is safe.
+    // ✅ Monkey Patch window.open (Blocks almost all popups/redirects)
     (window as any).open = (...args: Parameters<typeof window.open>) => {
       const url = args[0]?.toString() ?? '';
-      // Allow Videasy's own domains through, block everything else
-      if (url.includes('videasy.net') || url.includes('themoviedb.org')) {
-        return originalOpen(...args);
-      }
-      console.warn('[FlickAdBlock] Blocked popup:', url);
-      return null;
+      const isAllowed = url.includes('videasy.net') || url.includes('themoviedb.org') || url === 'about:blank' || !url;
+      
+      if (isAllowed) return originalOpen(...args);
+      
+      console.warn('[FlickGuard] Blocked redirect to:', url);
+      return { 
+        focus: () => {}, 
+        close: () => {}, 
+        location: { href: '' },
+        closed: true
+      };
     };
 
-    // Prevent the page from being navigated away by a rogue iframe script
+    // ✅ Stop Top-Frame Navigation (The "Confirm Exit" trick)
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
+      // Only prompt if a video is actually playing/loaded to avoid annoying users
+      if (!isLoading && !loadError) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
     };
 
-    // Listen for Videasy postMessage events (episode changes, etc.)
+    // ✅ Intercept Videasy messages
     const handleMessage = (e: MessageEvent) => {
       if (!e.origin.includes('videasy.net')) return;
-      // Future: handle { type: 'nextEpisode' } etc.
+      // Handle player events here if needed
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -115,7 +118,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('message', handleMessage);
     };
-  }, []);
+  }, [isLoading, loadError]);
 
   // ── Progress tracking ────────────────────────────────────────────────────
   useEffect(() => {
@@ -348,10 +351,10 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
 
             <div className="absolute top-0 left-0 right-0 flex items-start justify-between px-6 md:px-10 pt-5 pointer-events-auto">
               {/* Back + title */}
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0 z-[70]">
                 <button
                   onClick={onClose}
-                  className="flex-shrink-0 p-2 rounded-full hover:bg-white/10 transition-all group"
+                  className="flex-shrink-0 p-2 rounded-full hover:bg-white/10 transition-all group pointer-events-auto"
                 >
                   <ChevronLeft className="w-6 h-6 text-white group-hover:-translate-x-0.5 transition-transform" />
                 </button>
@@ -379,12 +382,12 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
               </div>
 
               {/* Right controls */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0 z-[70]">
                 {type === 'tv' && (
                   <button
                     onClick={() => setShowEpisodeList(!showEpisodeList)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black
-                                uppercase tracking-widest transition-all border backdrop-blur-xl shadow-xl ${
+                                uppercase tracking-widest transition-all border backdrop-blur-xl shadow-xl pointer-events-auto ${
                       showEpisodeList
                         ? 'bg-[#E50914] border-[#E50914] text-white'
                         : 'bg-black/50 border-white/10 hover:bg-white/10 text-white'
@@ -397,7 +400,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
 
                 <button
                   onClick={handleFullscreen}
-                  className="p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-xl"
+                  className="p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-xl pointer-events-auto"
                 >
                   {isFullscreen
                     ? <Minimize2 className="w-5 h-5 text-white" />
@@ -406,7 +409,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
 
                 <button
                   onClick={onClose}
-                  className="p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-xl"
+                  className="p-2.5 bg-black/50 backdrop-blur-xl rounded-full border border-white/10 hover:bg-white/10 transition-all shadow-xl pointer-events-auto"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
@@ -441,36 +444,20 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         />
 
         {/*
-          Edge shields — thin invisible divs on top/bottom/sides of the iframe.
-          They sit above the iframe (z-30) and intercept clicks in the regions
-          where ad banners typically appear, preventing accidental redirects.
-          The CENTER of the screen is intentionally left open so the Videasy
-          player controls (play, pause, seek) work normally.
-          Clicking a shield just shows our controls instead of following an ad.
+          ✅ Full-Screen Shield (Ad-Prevention Layer)
+          When controls are hidden, this invisible layer covers the entire iframe.
+          It intercepts ALL clicks/taps, preventing them from reaching the iframe's
+          internal ads (like click-jacking overlays).
+          The first tap anywhere will toggle the controls instead of triggering an ad.
         */}
         {!controlsVisible && (
-          <>
-            {/* Top edge — top-banner ads */}
-            <div
-              className="absolute top-0 left-0 right-0 h-16 z-30 cursor-default"
-              onClick={resetHideTimer}
-            />
-            {/* Bottom edge — bottom-banner / pre-roll ads */}
-            <div
-              className="absolute bottom-0 left-0 right-0 h-16 z-30 cursor-default"
-              onClick={resetHideTimer}
-            />
-            {/* Left edge */}
-            <div
-              className="absolute top-16 bottom-16 left-0 w-12 z-30 cursor-default"
-              onClick={resetHideTimer}
-            />
-            {/* Right edge */}
-            <div
-              className="absolute top-16 bottom-16 right-0 w-12 z-30 cursor-default"
-              onClick={resetHideTimer}
-            />
-          </>
+          <div
+            className="absolute inset-0 z-30 cursor-pointer bg-transparent"
+            onClick={(e) => {
+              e.stopPropagation();
+              resetHideTimer();
+            }}
+          />
         )}
 
         {/* ── Episode sidebar ────────────────────────────────────────────────── */}
