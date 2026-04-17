@@ -127,9 +127,9 @@ export const useTVSeason = (tvId: string, seasonNumber: number) => useQuery({
 });
 
 export const useWatchlist = () => {
-  const { userId } = useAuth();
+  const { userId, isLoaded } = useAuth();
   return useQuery({
-    queryKey: ['watchlist'],
+    queryKey: ['watchlist', userId],
     queryFn: async () => {
       const response = await API.get('/user/watchlist');
       return response.data.map((item: any) => ({
@@ -139,7 +139,8 @@ export const useWatchlist = () => {
         backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
       }));
     },
-    enabled: !!userId,
+    enabled: isLoaded && !!userId,
+    retry: 2,
   });
 };
 
@@ -192,9 +193,9 @@ export const useRemoveFromWatchlist = () => {
 };
 
 export const useContinueWatching = () => {
-  const { userId } = useAuth();
+  const { userId, isLoaded } = useAuth();
   return useQuery({
-    queryKey: ['continue-watching'],
+    queryKey: ['continue-watching', userId],
     queryFn: async () => {
       const response = await API.get('/user/continue-watching');
       return response.data.map((item: any) => ({
@@ -204,14 +205,15 @@ export const useContinueWatching = () => {
         backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
       }));
     },
-    enabled: !!userId,
+    enabled: isLoaded && !!userId,
+    retry: 2,
   });
 };
 
 export const useWatchHistory = () => {
-  const { userId } = useAuth();
+  const { userId, isLoaded } = useAuth();
   return useQuery({
-    queryKey: ['watch-history'],
+    queryKey: ['watch-history', userId],
     queryFn: async () => {
       const response = await API.get('/user/history');
       return response.data.map((item: any) => ({
@@ -221,7 +223,8 @@ export const useWatchHistory = () => {
         backdrop_url: item.backdrop_path ? `https://image.tmdb.org/t/p/original${item.backdrop_path}` : null,
       }));
     },
-    enabled: !!userId,
+    enabled: isLoaded && !!userId,
+    retry: 2,
   });
 };
 
