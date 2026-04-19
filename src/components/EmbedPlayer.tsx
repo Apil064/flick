@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, List, Play, ChevronRight, Maximize, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
+import { useAdBlocker } from '../hooks/useAdBlocker';
 import { CustomVideoPlayer } from './CustomVideoPlayer';
 import axios from 'axios';
 
@@ -29,6 +30,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [isFetchingSource, setIsFetchingSource] = useState(true);
   const [debugCustom, setDebugCustom] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  const { clickedOnce, setClickedOnce, overlayEnabled } = useAdBlocker();
   
   const { data: details } = useMovieDetails(type, tmdbId);
   const { data: seasonDetails } = useTVSeason(tmdbId, currentSeason);
@@ -329,15 +332,24 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
               </div>
             </div>
 
-            <iframe
-              ref={iframeRef}
-              src={fallbackVideoUrl}
-              className="w-full h-full border-none"
-              allowFullScreen
-              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
-              title="Video Player"
-            />
+            <div className="relative w-full h-full">
+              {overlayEnabled && !clickedOnce && (
+                <div
+                  className="absolute inset-0 z-50 cursor-pointer"
+                  onClick={() => setClickedOnce(true)}
+                />
+              )}
+
+              <iframe
+                ref={iframeRef}
+                src={fallbackVideoUrl}
+                className="w-full h-full border-none"
+                allowFullScreen
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                sandbox="allow-scripts allow-same-origin allow-presentation"
+                title="Video Player"
+              />
+            </div>
           </>
         )}
 
