@@ -108,40 +108,47 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       ? (details?.runtime || 120) * 60 
       : (details?.episode_run_time?.[0] || 45) * 60);
 
-    const saveInterval = setInterval(() => {
-      saveProgress({
-        tmdb_id: tmdbId,
-        media_type: type,
-        title: title,
-        poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-        backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-        season: type === 'tv' ? currentSeason : 0,
-        episode: type === 'tv' ? currentEpisode : 0,
-        progress_seconds: Math.floor(localProgress),
-        duration_seconds: Math.floor(duration)
-      });
-    }, 30000);
-
-    const handleBeforeUnload = () => {
-      saveProgress({
-        tmdb_id: tmdbId,
-        media_type: type,
-        title: title,
-        poster_path: posterPath || details?.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-        backdrop_path: backdropPath || details?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
-        season: type === 'tv' ? currentSeason : 0,
-        episode: type === 'tv' ? currentEpisode : 0,
-        progress_seconds: Math.floor(localProgress),
-        duration_seconds: Math.floor(duration)
-      });
+    const getCleanPath = (path?: string) => {
+      if (!path) return '';
+      return path.replace('https://image.tmdb.org/t/p/w500', '')
+                 .replace('https://image.tmdb.org/t/p/original', '')
+                 .replace('https://image.tmdb.org/t/p/w780', '');
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    const progressData = {
+      tmdb_id: tmdbId,
+      media_type: type,
+      title: title,
+      poster_path: getCleanPath(posterPath || details?.poster_url),
+      backdrop_path: getCleanPath(backdropPath || details?.backdrop_url),
+      season: type === 'tv' ? currentSeason : 0,
+      episode: type === 'tv' ? currentEpisode : 0,
+      progress_seconds: Math.floor(localProgress),
+      duration_seconds: Math.floor(duration)
+    };
+
+    const saveInterval = setInterval(() => {
+      saveProgress(progressData);
+    }, 30000);
+
+    const handleUnload = () => {
+      // Use navigator.sendBeacon for reliable saving on page unload/close
+      const url = `${import.meta.env.VITE_API_URL || '/api'}/user/history`;
+      const blob = new Blob([JSON.stringify(progressData)], { type: 'application/json' });
+      navigator.sendBeacon(url, blob);
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        handleUnload();
+      }
+    });
 
     return () => {
       clearInterval(saveInterval);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      handleBeforeUnload();
+      window.removeEventListener('beforeunload', handleUnload);
+      handleUnload(); // Save progress on component unmount
     };
   }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, details?.episode_run_time, localProgress, localDuration]);
 
@@ -166,6 +173,27 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   };
 
   const handleEpisodeChange = (s: number, e: number) => {
+    // Save progress of current episode before switching
+    const duration = localDuration || (details?.episode_run_time?.[0] || 45) * 60;
+    const getCleanPath = (path?: string) => {
+      if (!path) return '';
+      return path.replace('https://image.tmdb.org/t/p/w500', '')
+                 .replace('https://image.tmdb.org/t/p/original', '')
+                 .replace('https://image.tmdb.org/t/p/w780', '');
+    };
+
+    saveProgress({
+      tmdb_id: tmdbId,
+      media_type: type,
+      title: title,
+      poster_path: getCleanPath(posterPath || details?.poster_url),
+      backdrop_path: getCleanPath(backdropPath || details?.backdrop_url),
+      season: currentSeason,
+      episode: currentEpisode,
+      progress_seconds: Math.floor(localProgress),
+      duration_seconds: Math.floor(duration)
+    });
+
     setCurrentSeason(s);
     setCurrentEpisode(e);
     setLocalProgress(0);

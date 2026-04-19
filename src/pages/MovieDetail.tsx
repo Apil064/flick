@@ -20,8 +20,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
     episode: item.episode || 1,
     startTime: item.progress_seconds || 0,
     title: item.title,
-    posterPath: item.poster_path || item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-    backdropPath: item.backdrop_path || item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')
+    posterPath: item.poster_path || item.poster_url?.replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w780', ''),
+    backdropPath: item.backdrop_path || item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/w780', '')
   });
   const [activeSeason, setActiveSeason] = useState(item.season || 1);
   
@@ -38,13 +38,16 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
   const isInWatchlist = watchlist?.some((w: any) => String(w.tmdb_id) === String(item.id));
 
   const handleWatchNow = (s = 1, e = 1, t = 0) => {
+    const cleanPoster = item.poster_path || item.poster_url?.replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w780', '');
+    const cleanBackdrop = item.backdrop_path || item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/w780', '');
+    
     setSelectedEpisode({ 
       season: s, 
       episode: e, 
       startTime: t,
       title: item.title,
-      posterPath: item.poster_path || item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-      backdropPath: item.backdrop_path || item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '')
+      posterPath: cleanPoster,
+      backdropPath: cleanBackdrop
     });
     setShowPlayer(true);
   };
@@ -59,8 +62,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
         tmdb_id: item.id,
         media_type: type,
         title: item.title,
-        poster_path: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', ''),
-        backdrop_path: item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', ''),
+        poster_path: item.poster_url?.replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w780', ''),
+        backdrop_path: item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/w780', ''),
         overview: item.description,
         vote_average: item.rating,
         release_date: item.release_year

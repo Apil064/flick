@@ -35,7 +35,13 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
             >
               <div className="relative aspect-video rounded-2xl overflow-hidden mb-4 bg-white/5 border border-white/10 shadow-2xl">
                 <img
-                  src={item.backdrop_url || `https://image.tmdb.org/t/p/w780${item.backdrop_path}`}
+                  src={item.backdrop_path?.startsWith('http') 
+                    ? item.backdrop_path 
+                    : (item.backdrop_path 
+                      ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` 
+                      : (item.poster_path?.startsWith('http') 
+                        ? item.poster_path 
+                        : `https://image.tmdb.org/t/p/w500${item.poster_path}`))}
                   alt={item.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   referrerPolicy="no-referrer"
