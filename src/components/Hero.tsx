@@ -24,6 +24,10 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
     return () => clearInterval(interval);
   }, [items]);
 
+  if (!items || items.length === 0) {
+    return <div className="h-[85vh] md:h-screen w-full bg-bg-primary" />;
+  }
+
   if (!currentItem) return null;
 
   const logo = images?.logos?.find((l: any) => l.iso_639_1 === 'en' && l.file_path.endsWith('.png')) || 

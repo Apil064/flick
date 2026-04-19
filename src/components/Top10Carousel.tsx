@@ -60,7 +60,18 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
     setIsDragging(false);
   };
 
-  if (!items || items.length === 0) return null;
+  if (!items || items.length === 0) {
+    return (
+      <div className="py-16 px-6 md:px-16 overflow-hidden bg-black/20">
+        <div className="h-20 md:h-28 w-2/3 bg-white/5 animate-pulse rounded-2xl mb-12" />
+        <div className="flex gap-8 px-16 md:px-24">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex-shrink-0 w-44 md:w-56 aspect-[2/3] bg-white/5 animate-pulse rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative group/carousel py-16 px-6 md:px-16 overflow-hidden bg-black/20">

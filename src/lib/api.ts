@@ -10,7 +10,6 @@ export const API = axios.create({
 // Add auth token if available
 API.interceptors.request.use(async (config) => {
   try {
-    // Access Clerk from the window object safely
     const clerk = (window as any).Clerk;
     if (clerk?.session) {
       const token = await clerk.session.getToken();
@@ -19,10 +18,18 @@ API.interceptors.request.use(async (config) => {
       }
     }
   } catch (error) {
-    // Never throw or block the request
     console.warn('Silent error getting Clerk token:', error);
   }
   return config;
 }, (error) => {
   return Promise.reject(error);
 });
+
+// Response error handler
+API.interceptors.response.use(
+  res => res,
+  err => {
+    console.error('API error:', err.message);
+    return Promise.reject(err);
+  }
+);

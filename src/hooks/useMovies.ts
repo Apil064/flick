@@ -6,15 +6,16 @@ export const useTrending = (type: 'movie' | 'tv' | 'all' = 'movie') => useQuery(
   queryKey: ['trending', type],
   queryFn: async () => {
     try {
-      const response = await API.get(`${type === 'tv' ? 'tv' : 'movies'}/trending`);
+      const path = type === 'tv' ? 'tv/trending' : 'movies/trending';
+      const response = await API.get(path);
       return response.data;
     } catch (error) {
       console.error(`Error fetching trending ${type}:`, error);
       throw error;
     }
   },
-  staleTime: 0,
-  gcTime: 0,
+  staleTime: 5 * 60 * 1000,
+  gcTime: 10 * 60 * 1000,
 });
 
 export const usePopular = (type: 'movie' | 'tv' = 'movie') => useQuery({
@@ -28,8 +29,8 @@ export const usePopular = (type: 'movie' | 'tv' = 'movie') => useQuery({
       throw error;
     }
   },
-  staleTime: 0,
-  gcTime: 0,
+  staleTime: 5 * 60 * 1000,
+  gcTime: 10 * 60 * 1000,
 });
 
 export const useTopRated = (type: 'movie' | 'tv' = 'movie') => useQuery({
@@ -43,8 +44,8 @@ export const useTopRated = (type: 'movie' | 'tv' = 'movie') => useQuery({
       throw error;
     }
   },
-  staleTime: 0,
-  gcTime: 0,
+  staleTime: 5 * 60 * 1000,
+  gcTime: 10 * 60 * 1000,
 });
 
 export const useRecent = () => useQuery({
@@ -64,8 +65,8 @@ export const useByGenreName = (genreName: string) => useQuery({
     }
   },
   enabled: !!genreName,
-  staleTime: 0,
-  gcTime: 0,
+  staleTime: 5 * 60 * 1000,
+  gcTime: 10 * 60 * 1000,
 });
 
 export const useNowPlaying = () => useQuery({

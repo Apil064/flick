@@ -98,7 +98,20 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
     setIsDragging(false);
   };
 
-  if (!items || items.length === 0) return null;
+  if (!items || items.length === 0) {
+    return (
+      <div className="py-6 px-6 md:px-16 overflow-hidden">
+        <div className="flex items-center justify-between mb-6">
+          <div className="h-8 w-48 bg-white/5 animate-pulse rounded-lg" />
+        </div>
+        <div className="flex gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="flex-shrink-0 w-44 md:w-56 aspect-[2/3] bg-white/5 animate-pulse rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 

@@ -15,8 +15,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
-      // Global error handler to prevent silent failures
+      retry: 2,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       throwOnError: false,
     },
   },
