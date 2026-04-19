@@ -8,6 +8,14 @@ import { Link } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 
 export const WatchHistory: React.FC = () => {
+  const { isSignedIn, isLoaded } = useUser();
+  const { data: history, isLoading } = useWatchHistory();
+  const { mutate: removeFromHistory } = useRemoveFromHistory();
+  const { mutate: clearHistory } = useClearHistory();
+  
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [activePlayerItem, setActivePlayerItem] = useState<any>(null);
+
   const getImageUrl = (backdropPath?: string, posterPath?: string) => {
     if (backdropPath) {
       if (backdropPath.startsWith('http')) return backdropPath;
@@ -19,14 +27,6 @@ export const WatchHistory: React.FC = () => {
     }
     return 'https://via.placeholder.com/780x440?text=No+Image';
   };
-
-  const { isSignedIn, isLoaded } = useUser();
-  const { data: history, isLoading } = useWatchHistory();
-  const { mutate: removeFromHistory } = useRemoveFromHistory();
-  const { mutate: clearHistory } = useClearHistory();
-  
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [activePlayerItem, setActivePlayerItem] = useState<any>(null);
 
   const handleItemClick = (item: any) => {
     setSelectedItem({
@@ -175,7 +175,7 @@ export const WatchHistory: React.FC = () => {
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-accent-red shadow-[0_0_10px_rgba(229,9,20,0.5)]" 
-                        style={{ width: `${item.duration_seconds > 0 ? (item.progress_seconds / item.duration_seconds) * 100 : 0}%` }}
+                        style={{ width: `${item.duration_seconds > 0 ? Math.round((item.progress_seconds / item.duration_seconds) * 100) : 0}%` }}
                       />
                     </div>
                   </div>

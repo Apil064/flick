@@ -8,6 +8,9 @@ interface ContinueWatchingProps {
 }
 
 export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) => {
+  const { isSignedIn } = useUser();
+  const { data: history, isLoading } = useContinueWatching();
+
   const getImageUrl = (backdropPath?: string, posterPath?: string) => {
     if (backdropPath) {
       if (backdropPath.startsWith('http')) return backdropPath;
@@ -19,9 +22,6 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
     }
     return 'https://via.placeholder.com/780x440?text=No+Image';
   };
-
-  const { isSignedIn } = useUser();
-  const { data: history, isLoading } = useContinueWatching();
 
   if (!isSignedIn || isLoading || !history || history.length === 0) return null;
 

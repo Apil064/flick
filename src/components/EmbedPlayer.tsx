@@ -36,17 +36,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [localProgress, setLocalProgress] = useState(startTime);
   const [localDuration, setLocalDuration] = useState(0);
 
-  const localProgressRef = useRef(localProgress);
-  const localDurationRef = useRef(localDuration);
-
-  useEffect(() => {
-    localProgressRef.current = localProgress;
-  }, [localProgress]);
-
-  useEffect(() => {
-    localDurationRef.current = localDuration;
-  }, [localDuration]);
-
   // Fetch M3U8 source
   useEffect(() => {
     const fetchSource = async () => {
@@ -82,6 +71,15 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     setLocalProgress(startTime);
   }, [startTime, tmdbId, currentSeason, currentEpisode]);
 
+  // Progress tracking for iframe fallback
+  useEffect(() => {
+    if (videoSource) return; // Custom player handles its own progress
+    const interval = setInterval(() => {
+      setLocalProgress(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [tmdbId, currentSeason, currentEpisode, videoSource]);
+
   // Auto-next logic
   useEffect(() => {
     if (!autoNext || type !== 'tv' || !details || !seasonDetails) return;
@@ -114,8 +112,11 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         .replace('https://image.tmdb.org/t/p/w780', '');
     };
 
-    const duration = localDurationRef.current || (type === 'movie'
-      ? (details?.runtime || 120) * 60
+    const progressRef = { current: localProgress };
+    progressRef.current = localProgress;
+
+    const duration = localDuration || (type === 'movie' 
+      ? (details?.runtime || 120) * 60 
       : (details?.episode_run_time?.[0] || 45) * 60);
 
     const buildProgressData = () => ({
@@ -126,7 +127,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       backdrop_path: getCleanPath(backdropPath || details?.backdrop_url),
       season: type === 'tv' ? currentSeason : 0,
       episode: type === 'tv' ? currentEpisode : 0,
-      progress_seconds: Math.floor(localProgressRef.current),
+      progress_seconds: Math.floor(progressRef.current),
       duration_seconds: Math.floor(duration)
     });
 
@@ -139,13 +140,13 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     };
 
     window.addEventListener('beforeunload', handleUnload);
-    
+
     return () => {
       clearInterval(saveInterval);
       window.removeEventListener('beforeunload', handleUnload);
       saveProgress(buildProgressData());
     };
-  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details]);
+  }, [tmdbId, type, currentSeason, currentEpisode, localProgress, localDuration, title, posterPath, backdropPath, details]);
 
   const fallbackVideoUrl = type === 'movie'
     ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
