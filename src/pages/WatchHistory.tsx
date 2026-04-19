@@ -67,15 +67,15 @@ export const WatchHistory: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-bg-primary pt-24 sm:pt-32 pb-20 px-4 sm:px-8 md:px-16">
+    <div className="min-h-screen bg-bg-primary pt-32 pb-20 px-6 md:px-16">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 sm:mb-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div className="space-y-2">
             <Link to="/" className="text-accent-red flex items-center gap-2 text-xs font-black uppercase tracking-widest mb-4 hover:text-white transition-colors">
               <ChevronLeft className="w-4 h-4" /> Back to Home
             </Link>
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter text-white">Watch History</h1>
-            <p className="text-sm sm:text-base text-text-secondary font-medium">Manage your recently watched movies and TV shows.</p>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic text-white">Watch History</h1>
+            <p className="text-text-secondary font-medium">Manage your recently watched movies and TV shows.</p>
           </div>
           
           {history && history.length > 0 && (
@@ -90,15 +90,15 @@ export const WatchHistory: React.FC = () => {
         </div>
 
         {!history || history.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 sm:py-32 space-y-6 bg-white/5 rounded-3xl border border-white/5 border-dashed px-6">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5 flex items-center justify-center">
-              <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-text-muted" />
+          <div className="flex flex-col items-center justify-center py-32 space-y-6 bg-white/5 rounded-3xl border border-white/5 border-dashed">
+            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
+              <Clock className="w-10 h-10 text-text-muted" />
             </div>
             <div className="text-center">
               <h2 className="text-xl font-bold text-white mb-2">Your history is empty</h2>
-              <p className="text-sm sm:text-base text-text-secondary">Start watching something to see it here!</p>
+              <p className="text-text-secondary">Start watching something to see it here!</p>
             </div>
-            <Link to="/" className="w-full sm:w-auto px-8 py-3 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all uppercase text-xs tracking-widest text-center">
+            <Link to="/" className="px-8 py-3 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all uppercase text-xs tracking-widest">
               Browse Movies
             </Link>
           </div>
@@ -110,7 +110,7 @@ export const WatchHistory: React.FC = () => {
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group relative bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden hover:border-white/20 transition-all"
+                className="group relative bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:border-white/20 transition-all"
               >
                 <div className="aspect-video relative overflow-hidden">
                   <img
@@ -119,16 +119,16 @@ export const WatchHistory: React.FC = () => {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                     <button
                       onClick={() => setActivePlayerItem(item)}
-                      className="w-14 h-14 sm:w-12 sm:h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
+                      className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform"
                     >
                       <Play className="w-6 h-6 fill-black" />
                     </button>
                     <button
                       onClick={() => handleItemClick(item)}
-                      className="w-14 h-14 sm:w-12 sm:h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-white/40 transition-all shadow-2xl"
+                      className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center hover:bg-white/40 transition-all"
                     >
                       <Info className="w-6 h-6 text-white" />
                     </button>
@@ -142,13 +142,13 @@ export const WatchHistory: React.FC = () => {
 
                   <button
                     onClick={() => removeFromHistory(item.tmdb_id)}
-                    className="absolute top-4 right-4 p-3 sm:p-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-accent-red transition-colors opacity-100 sm:opacity-0 group-hover:opacity-100"
+                    className="absolute top-4 right-4 p-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-accent-red transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="p-4 sm:p-6 space-y-4">
+                <div className="p-6 space-y-4">
                   <div>
                     <h3 className="text-lg font-bold text-white truncate group-hover:text-accent-red transition-colors">
                       {item.title}

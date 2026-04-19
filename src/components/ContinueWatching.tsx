@@ -28,15 +28,15 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
   const displayHistory = history.slice(0, 10);
 
   return (
-    <div className="py-10 px-4 sm:px-8 md:px-16">
-      <h2 className="text-xl md:text-3xl font-bold tracking-tighter text-white/90 mb-8">Continue Watching</h2>
-      <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-6 pr-6 md:pr-16">
+    <div className="py-10 px-6 md:px-16">
+      <h2 className="text-xl md:text-3xl font-black tracking-tighter uppercase italic text-white/90 mb-8">Continue Watching</h2>
+      <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-6">
         {displayHistory.map((item: any) => {
           const progress = item.duration_seconds > 0 ? (item.progress_seconds / item.duration_seconds) * 100 : 0;
           return (
             <div
               key={item.id}
-              className="flex-shrink-0 w-[240px] md:w-[320px] group cursor-pointer"
+              className="flex-shrink-0 w-64 md:w-80 group cursor-pointer"
               onClick={() => onPlay({
                 ...item,
                 id: item.tmdb_id,
@@ -67,13 +67,13 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
                 </div>
               </div>
               <div className="space-y-2 px-1">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-bold truncate text-sm tracking-tight text-white/90">{item.title}</h3>
-                  <span className="text-[10px] font-bold text-accent-red bg-accent-red/10 px-2 py-0.5 rounded-md whitespace-nowrap flex-shrink-0">
-                    {Math.max(0, Math.floor((item.duration_seconds - item.progress_seconds) / 60))}m left
+                <div className="flex items-center justify-between">
+                  <h3 className="font-black truncate text-sm tracking-tight text-white/90">{item.title}</h3>
+                  <span className="text-[10px] font-black text-accent-red bg-accent-red/10 px-2 py-0.5 rounded-md">
+                    {Math.max(0, Math.floor((item.duration_seconds - item.progress_seconds) / 60))}M LEFT
                   </span>
                 </div>
-                <p className="text-[10px] text-text-secondary font-medium uppercase tracking-wider opacity-60">
+                <p className="text-[10px] text-text-secondary font-black uppercase tracking-[0.2em] opacity-60">
                   {item.media_type === 'tv' ? `S${item.season} • E${item.episode}` : 'Feature Film'}
                 </p>
               </div>

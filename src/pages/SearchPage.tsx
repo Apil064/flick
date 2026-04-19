@@ -47,9 +47,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] bg-bg-primary/95 backdrop-blur-2xl flex flex-col"
     >
-      <div className="p-4 sm:p-6 md:p-16 flex flex-col h-full">
-        <div className="flex items-center justify-between mb-8 sm:mb-12 gap-3">
-          <div className="flex-1 max-w-lg relative min-w-0">
+      <div className="p-6 md:p-16 flex flex-col h-full">
+        <div className="flex items-center justify-between mb-12">
+          <div className="flex-1 max-w-lg relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <input
               autoFocus
@@ -57,13 +57,12 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
               placeholder="Search movies, TV shows..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              style={{ fontSize: '16px' }}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-12 py-3 text-base font-medium focus:outline-none focus:border-accent-red/50 focus:bg-white/10 transition-all placeholder:text-text-muted shadow-xl"
             />
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors border border-white/5 flex-shrink-0"
+            className="ml-4 p-2 hover:bg-white/10 rounded-full transition-colors border border-white/5"
           >
             <X className="w-5 h-5" />
           </button>
@@ -75,7 +74,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
               <h2 className="text-xl font-bold uppercase tracking-widest text-text-secondary">
                 Trending Searches
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                 {trending?.slice(0, 12).map((item: any) => (
                   <div
                     key={item.id}
@@ -101,7 +100,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onClose }) => {
           )}
 
           {query && (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
               {isLoading ? (
                 Array.from({ length: 12 }).map((_, i) => (
                   <div key={i} className="aspect-[2/3] bg-bg-secondary animate-pulse rounded-xl" />

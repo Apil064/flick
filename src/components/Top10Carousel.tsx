@@ -64,7 +64,7 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
     return (
       <div className="py-16 px-6 md:px-16 overflow-hidden bg-black/20">
         <div className="h-20 md:h-28 w-2/3 bg-white/5 animate-pulse rounded-2xl mb-12" />
-        <div className="flex gap-8 px-8 sm:px-16 md:px-24">
+        <div className="flex gap-8 px-16 md:px-24">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex-shrink-0 w-44 md:w-56 aspect-[2/3] bg-white/5 animate-pulse rounded-2xl" />
           ))}
@@ -74,11 +74,11 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
   }
 
   return (
-    <div className="relative group/carousel py-12 px-4 sm:px-8 md:px-16 overflow-hidden bg-black/20">
-      <div className="flex items-center gap-4 mb-8">
-        <h2 className="text-2xl md:text-5xl font-bold tracking-tighter text-white flex items-baseline gap-3">
-          <span className="text-transparent" style={{ WebkitTextStroke: '1.5px #E50914' }}>Top 10</span>
-          <span className="text-[10px] md:text-xs font-bold text-text-secondary tracking-widest uppercase">Content Today</span>
+    <div className="relative group/carousel py-16 px-6 md:px-16 overflow-hidden bg-black/20">
+      <div className="flex items-center gap-4 mb-12">
+        <h2 className="text-4xl md:text-7xl font-black tracking-tighter uppercase italic text-white flex items-baseline gap-4">
+          <span className="text-transparent" style={{ WebkitTextStroke: '2px #E50914' }}>TOP 10</span>
+          <span className="text-sm md:text-xl tracking-[0.3em] font-bold text-white/90 not-italic">CONTENT TODAY</span>
         </h2>
       </div>
 
@@ -98,14 +98,14 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
           onMouseDown={handleMouseDown}
           onMouseUp={handleEnd}
           onMouseMove={handleMouseMove}
-          className={`flex gap-4 md:gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-10 px-8 sm:px-16 md:px-24 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-4 md:gap-8 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-12 pt-10 px-16 md:px-24 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {displayItems.map((item, index) => (
-            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end pl-8 sm:pl-10 md:pl-14">
+            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end pl-10 md:pl-14">
               {/* Numeric Badge */}
               <div className="absolute left-0 bottom-[-5%] z-10 select-none pointer-events-none transition-all duration-500 group-hover/item:-translate-x-3 md:group-hover/item:-translate-x-5 origin-bottom-right">
-                <span className="text-[60px] sm:text-[80px] md:text-[130px] font-black leading-[0.8] tracking-tighter transition-all duration-500"
+                <span className="text-[80px] md:text-[130px] font-black leading-[0.8] tracking-tighter transition-all duration-500"
                       style={{ 
                         WebkitTextStroke: '1.5px #E50914',
                         color: 'transparent',

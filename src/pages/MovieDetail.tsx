@@ -82,19 +82,19 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-10"
+        className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 md:p-10"
         onClick={onClose}
       >
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 20, opacity: 0 }}
-          className="relative w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[90vh] bg-bg-primary rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          className="relative w-full max-w-6xl max-h-[90vh] bg-bg-primary rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 p-2 bg-black/40 hover:bg-black/60 rounded-full transition-colors border border-white/10"
+            className="absolute top-6 right-6 z-50 p-2 bg-black/40 hover:bg-black/60 rounded-full transition-colors border border-white/10"
           >
             <X className="w-6 h-6" />
           </button>
@@ -111,9 +111,9 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
           </div>
 
           {/* Right Side: Content */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-8 md:p-12 space-y-8 no-scrollbar">
+          <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-8 no-scrollbar">
             {/* Backdrop for mobile */}
-            <div className="md:hidden absolute top-0 left-0 right-0 h-48 sm:h-64 -z-10">
+            <div className="md:hidden absolute top-0 left-0 right-0 h-64 -z-10">
               <img
                 src={backdropUrl}
                 alt=""
@@ -123,24 +123,24 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
               <div className="absolute inset-0 bg-gradient-to-t from-bg-primary to-transparent" />
             </div>
 
-            <div className="space-y-4 pt-40 sm:pt-48 md:pt-0">
+            <div className="space-y-4 pt-20 md:pt-0">
               <div className="flex items-center gap-3">
-                <span className="px-3 py-1 bg-accent-red text-[10px] font-bold uppercase rounded">
+                <span className="px-3 py-1 bg-accent-red text-[10px] font-black uppercase rounded">
                   {type === 'movie' ? 'Movie' : 'TV Series'}
                 </span>
-                {details?.genres?.slice(0, 2).map((g: any) => (
+                {details?.genres?.map((g: any) => (
                   <span key={g.id} className="text-xs font-medium text-text-secondary">
                     {g.name}
                   </span>
                 ))}
               </div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter leading-none">
+              <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
                 {item.title}
               </h1>
 
               {details?.tagline && (
-                <p className="text-lg italic text-text-secondary font-medium hidden sm:block">
+                <p className="text-xl italic text-text-secondary font-medium">
                   "{details.tagline}"
                 </p>
               )}
@@ -166,27 +166,31 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
             <div className="flex flex-wrap gap-4">
               <button
                 onClick={() => handleWatchNow()}
-                className="flex-1 md:flex-none px-10 py-4 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-3 group shadow-xl"
+                className="flex-1 md:flex-none px-10 py-4 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-3 group shadow-xl"
               >
                 <Play className="w-6 h-6 fill-black group-hover:scale-110 transition-transform" />
-                Watch Now
+                WATCH NOW
               </button>
               <button
                 onClick={handleWatchlistClick}
                 disabled={!isSignedIn}
-                className={`flex-1 md:flex-none px-10 py-4 font-bold rounded-full transition-all border flex items-center justify-center gap-3 shadow-2xl group/watchlist ${
+                className={`flex-1 md:flex-none px-10 py-4 font-black rounded-full transition-all border flex items-center justify-center gap-3 shadow-2xl group/watchlist ${
                   isInWatchlist 
                     ? 'bg-accent-red border-accent-red text-white scale-105 shadow-accent-red/20' 
                     : 'bg-white/5 text-white hover:bg-white/10 border-white/20'
                 }`}
               >
                 {isInWatchlist ? (
-                  <Check className="w-6 h-6" />
+                  <>
+                    <Check className="w-6 h-6" />
+                    ADDED TO LIST
+                  </>
                 ) : (
-                  <Plus className="w-6 h-6 group-hover/watchlist:rotate-90 transition-transform" />
+                  <>
+                    <Plus className="w-6 h-6 group-hover/watchlist:rotate-90 transition-transform" />
+                    ADD TO LIST
+                  </>
                 )}
-                <span className="hidden sm:inline">{isInWatchlist ? 'Added to List' : 'Add to List'}</span>
-                <span className="sm:hidden">{isInWatchlist ? 'Saved' : 'Save'}</span>
               </button>
             </div>
 
@@ -194,11 +198,11 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
             {type === 'tv' && details?.seasons && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold tracking-tighter text-accent-red">Episodes</h3>
+                  <h3 className="text-xl font-black tracking-tighter uppercase italic text-accent-red">Episodes</h3>
                   <select 
                     value={activeSeason}
                     onChange={(e) => setActiveSeason(Number(e.target.value))}
-                    className="bg-bg-secondary border border-white/10 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-accent-red transition-all cursor-pointer"
+                    className="bg-bg-secondary border border-white/10 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest outline-none focus:border-accent-red transition-all cursor-pointer"
                   >
                     {details.seasons.filter((s: any) => s.season_number > 0).map((s: any) => (
                       <option key={s.id} value={s.season_number}>
@@ -215,7 +219,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                       onClick={() => handleWatchNow(activeSeason, ep.episode_number)}
                       className="flex gap-4 p-3 rounded-2xl bg-white/5 border border-transparent hover:border-white/20 transition-all text-left group"
                     >
-                      <div className="relative flex-shrink-0 w-24 sm:w-32 aspect-video rounded-xl overflow-hidden bg-bg-secondary">
+                      <div className="relative flex-shrink-0 w-32 aspect-video rounded-xl overflow-hidden bg-bg-secondary">
                         <img
                           src={ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : posterUrl}
                           alt=""
@@ -233,7 +237,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                         <h4 className="text-sm font-bold truncate mb-1 group-hover:text-accent-red transition-colors">
                           {ep.name}
                         </h4>
-                        <p className="text-[10px] text-text-secondary line-clamp-1 leading-relaxed">
+                        <p className="text-[10px] text-text-secondary line-clamp-2 leading-relaxed">
                           {ep.overview || "No description available."}
                         </p>
                       </div>
@@ -244,8 +248,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
             )}
 
             <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">Overview</h3>
-              <p className="text-base sm:text-lg leading-relaxed text-text-secondary max-w-3xl">
+              <h3 className="text-lg font-bold uppercase tracking-widest text-text-secondary">Overview</h3>
+              <p className="text-lg leading-relaxed text-text-secondary max-w-3xl">
                 {item.description}
               </p>
             </div>
@@ -253,20 +257,20 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
             {/* Cast */}
             {credits?.cast && (
               <div className="space-y-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">Top Cast</h3>
+                <h3 className="text-lg font-bold uppercase tracking-widest text-text-secondary">Top Cast</h3>
                 <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
                   {credits.cast.slice(0, 10).map((person: any) => (
-                    <div key={person.id} className="flex-shrink-0 w-16 sm:w-24 text-center space-y-2">
-                      <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/5 mx-auto">
+                    <div key={person.id} className="flex-shrink-0 w-24 text-center space-y-2">
+                      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/5">
                         <img
-                          src={person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : 'https://picsum.photos/seed/person/185/185'}
+                          src={person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : 'https://via.placeholder.com/185x185?text=No+Image'}
                           alt={person.name}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
                       </div>
-                      <p className="text-[10px] sm:text-xs font-bold truncate">{person.name}</p>
-                      <p className="text-[9px] sm:text-[10px] text-text-muted truncate">{person.character}</p>
+                      <p className="text-xs font-bold truncate">{person.name}</p>
+                      <p className="text-[10px] text-text-muted truncate">{person.character}</p>
                     </div>
                   ))}
                 </div>
@@ -277,7 +281,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
             {similar && similar.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">More Like This</h3>
+                  <h3 className="text-lg font-bold uppercase tracking-widest text-text-secondary">More Like This</h3>
                   <button className="text-xs font-bold text-accent-red flex items-center gap-1">
                     View All <ChevronRight className="w-4 h-4" />
                   </button>

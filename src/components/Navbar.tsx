@@ -16,13 +16,10 @@ export const Navbar: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
-      if (isMobileMenuOpen && window.scrollY > 100) {
-        setIsMobileMenuOpen(false);
-      }
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isMobileMenuOpen]);
+  }, []);
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -34,12 +31,12 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 px-4 sm:px-8 md:px-16 h-20 flex items-center justify-between ${
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 px-6 md:px-16 h-20 flex items-center justify-between ${
           isScrolled ? 'bg-bg-primary/95 backdrop-blur-md shadow-2xl' : 'bg-gradient-to-b from-black/80 to-transparent'
         }`}
       >
-        <div className="flex items-center gap-4 sm:gap-10">
-          <Link to="/" className="text-2xl sm:text-3xl font-black tracking-tighter text-accent-red italic">
+        <div className="flex items-center gap-10">
+          <Link to="/" className="text-3xl font-black tracking-tighter text-accent-red italic">
             FLICK
           </Link>
 
@@ -58,7 +55,7 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-6">
+        <div className="flex items-center gap-6">
           <button
             onClick={() => setIsSearchOpen(true)}
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -71,15 +68,15 @@ export const Navbar: React.FC = () => {
             className="hidden md:flex items-center gap-2 p-2 hover:bg-white/10 rounded-full transition-colors text-text-secondary hover:text-white"
           >
             <Bookmark className="w-5 h-5" />
-            <span className="text-xs font-medium">Watchlist</span>
+            <span className="text-xs font-bold uppercase tracking-widest">Watchlist</span>
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-4">
             {isSignedIn ? (
               <UserMenu />
             ) : (
               <SignInButton mode="modal">
-                <button className="px-5 py-2 bg-white text-black text-sm font-bold rounded-full hover:bg-zinc-200 transition-colors">
+                <button className="px-5 py-2 bg-white text-black text-xs font-bold rounded-full hover:bg-zinc-200 transition-colors uppercase tracking-widest">
                   Sign In
                 </button>
               </SignInButton>
@@ -102,28 +99,26 @@ export const Navbar: React.FC = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-[90] bg-bg-primary pt-24 px-6 flex flex-col lg:hidden overflow-y-auto"
+            className="fixed inset-0 z-[90] bg-bg-primary pt-24 px-6 flex flex-col gap-6 lg:hidden"
           >
-            <div className="flex flex-col">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-xl font-bold py-4 border-b border-white/5 active:bg-white/5 transition-colors"
-                >
-                  {link.name}
-                </Link>
-              ))}
+            {navLinks.map((link) => (
               <Link
-                to="/watchlist"
+                key={link.path}
+                to={link.path}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-xl font-bold py-4 border-b border-white/5 flex items-center gap-3 active:bg-white/5 transition-colors"
+                className="text-2xl font-bold border-b border-white/5 pb-4"
               >
-                <Bookmark className="w-6 h-6 text-accent-red" />
-                Watchlist
+                {link.name}
               </Link>
-            </div>
+            ))}
+            <Link
+              to="/watchlist"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-2xl font-bold border-b border-white/5 pb-4 flex items-center gap-3"
+            >
+              <Bookmark className="w-6 h-6" />
+              Watchlist
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>
