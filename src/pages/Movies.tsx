@@ -33,7 +33,7 @@ export const Movies: React.FC = () => {
   return (
     <div className="min-h-screen bg-bg-primary pb-20">
       {/* Featured Banner */}
-      <div className="relative h-[60vh] w-full overflow-hidden">
+      <div className="relative h-[50vh] md:h-[60vh] w-full overflow-hidden">
         {featured && (
           <div className="absolute inset-0">
             <img
@@ -46,18 +46,18 @@ export const Movies: React.FC = () => {
           </div>
         )}
 
-        <div className="absolute inset-0 flex flex-col justify-end px-6 md:px-16 pb-12 space-y-4">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter">{featured?.title}</h1>
+        <div className="absolute inset-0 flex flex-col justify-end px-4 sm:px-8 md:px-16 pb-12 space-y-4">
+          <h1 className="text-3xl md:text-6xl font-black tracking-tighter leading-none">{featured?.title}</h1>
           <div className="flex gap-4">
             <button 
               onClick={() => handleItemClick(featured)}
-              className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all flex items-center gap-2"
+              className="px-6 py-2.5 sm:px-8 sm:py-3 bg-white text-black text-sm font-black rounded-full hover:bg-zinc-200 transition-all flex items-center gap-2 uppercase tracking-tighter"
             >
               <Play className="w-5 h-5 fill-black" /> PLAY
             </button>
             <button 
               onClick={() => handleItemClick(featured)}
-              className="px-8 py-3 bg-bg-secondary/60 backdrop-blur-md text-white font-bold rounded-full hover:bg-white/20 transition-all border border-white/10 flex items-center gap-2"
+              className="px-6 py-2.5 sm:px-8 sm:py-3 bg-bg-secondary/60 backdrop-blur-md text-white text-sm font-black rounded-full hover:bg-white/20 transition-all border border-white/10 flex items-center gap-2 uppercase tracking-tighter"
             >
               <Info className="w-5 h-5" /> INFO
             </button>
@@ -66,12 +66,12 @@ export const Movies: React.FC = () => {
       </div>
 
       {/* Genre Tabs */}
-      <div className="px-6 md:px-16 py-8 flex items-center gap-4 overflow-x-auto scrollbar-hide sticky top-20 z-50 bg-bg-primary/80 backdrop-blur-md border-b border-white/5">
+      <div className="px-4 sm:px-8 md:px-16 py-4 sm:py-8 flex items-center gap-2 sm:gap-4 overflow-x-auto scrollbar-hide sticky top-20 z-50 bg-bg-primary/80 backdrop-blur-md border-b border-white/5">
         {GENRES.map((genre) => (
           <button
             key={genre.id}
             onClick={() => setActiveGenre(genre)}
-            className={`px-6 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+            className={`px-4 py-1.5 sm:px-6 sm:py-2 rounded-lg sm:rounded-full text-xs sm:text-sm font-black transition-all whitespace-nowrap uppercase tracking-widest ${
               activeGenre.id === genre.id
                 ? 'bg-accent-red text-white'
                 : 'bg-bg-secondary text-text-secondary hover:text-white'

@@ -25,7 +25,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
   }, [items]);
 
   if (!items || items.length === 0) {
-    return <div className="h-[85vh] md:h-screen w-full bg-bg-primary" />;
+    return <div className="h-[70vh] md:h-screen min-h-[500px] w-full bg-bg-primary" />;
   }
 
   if (!currentItem) return null;
@@ -36,7 +36,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
   const logoUrl = logo ? `https://image.tmdb.org/t/p/w500${logo.file_path}` : null;
 
   return (
-    <div className="relative h-[85vh] md:h-screen w-full overflow-hidden">
+    <div className="relative h-[70vh] md:h-screen min-h-[500px] w-full overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentItem.id}
@@ -56,7 +56,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-16 pt-20">
+      <div className="absolute inset-0 flex flex-col justify-center px-5 sm:px-8 md:px-16 pt-20">
         <motion.div
           key={currentItem.id}
           initial={{ y: 30, opacity: 0 }}
@@ -64,7 +64,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
           transition={{ delay: 0.5, duration: 0.8 }}
           className="max-w-2xl space-y-4"
         >
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className="px-2 py-0.5 bg-accent-red text-[9px] font-black uppercase rounded tracking-widest">
               TOP 10 TRENDING TODAY
             </span>
@@ -96,21 +96,21 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
             ))}
           </div>
 
-          <p className="text-xs md:text-sm text-text-secondary font-medium max-w-lg line-clamp-3 text-shadow-lg opacity-80 leading-relaxed">
+          <p className="hidden sm:block text-xs md:text-sm text-text-secondary font-medium max-w-lg line-clamp-3 text-shadow-lg opacity-80 leading-relaxed">
             {currentItem.description}
           </p>
 
           <div className="flex flex-wrap gap-3 pt-2">
             <button 
               onClick={() => onItemClick(currentItem, type)}
-              className="px-6 py-2.5 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group shadow-lg"
+              className="min-w-[140px] px-6 py-2.5 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group shadow-lg"
             >
               <Play className="w-4 h-4 fill-black" />
               <span className="tracking-tighter text-xs uppercase">PLAY NOW</span>
             </button>
             <button 
               onClick={() => onItemClick(currentItem, type)}
-              className="px-6 py-2.5 bg-bg-secondary/40 backdrop-blur-xl text-white font-black rounded-full hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center gap-2 shadow-lg"
+              className="min-w-[140px] px-6 py-2.5 bg-bg-secondary/40 backdrop-blur-xl text-white font-black rounded-full hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center gap-2 shadow-lg"
             >
               <Info className="w-4 h-4" />
               <span className="tracking-tighter text-xs uppercase">MORE INFO</span>
@@ -120,7 +120,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
       </div>
 
       {/* Hero Indicators */}
-      <div className="absolute bottom-32 right-6 md:right-16 flex gap-2">
+      <div className="absolute bottom-6 md:bottom-32 right-6 md:right-16 flex gap-2">
         {items?.slice(0, 10).map((_, i) => (
           <button
             key={i}

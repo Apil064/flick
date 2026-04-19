@@ -28,15 +28,15 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
   const displayHistory = history.slice(0, 10);
 
   return (
-    <div className="py-10 px-6 md:px-16">
+    <div className="py-10 px-4 sm:px-8 md:px-16">
       <h2 className="text-xl md:text-3xl font-black tracking-tighter uppercase italic text-white/90 mb-8">Continue Watching</h2>
-      <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-6">
+      <div className="flex gap-6 overflow-x-auto scrollbar-hide pb-6 pr-6 md:pr-16">
         {displayHistory.map((item: any) => {
           const progress = item.duration_seconds > 0 ? (item.progress_seconds / item.duration_seconds) * 100 : 0;
           return (
             <div
               key={item.id}
-              className="flex-shrink-0 w-64 md:w-80 group cursor-pointer"
+              className="flex-shrink-0 w-[240px] md:w-[320px] group cursor-pointer"
               onClick={() => onPlay({
                 ...item,
                 id: item.tmdb_id,
@@ -67,9 +67,9 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
                 </div>
               </div>
               <div className="space-y-2 px-1">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <h3 className="font-black truncate text-sm tracking-tight text-white/90">{item.title}</h3>
-                  <span className="text-[10px] font-black text-accent-red bg-accent-red/10 px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] font-black text-accent-red bg-accent-red/10 px-2 py-0.5 rounded-md whitespace-nowrap flex-shrink-0">
                     {Math.max(0, Math.floor((item.duration_seconds - item.progress_seconds) / 60))}M LEFT
                   </span>
                 </div>

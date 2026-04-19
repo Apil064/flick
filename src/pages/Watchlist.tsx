@@ -29,31 +29,31 @@ export const Watchlist: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-bg-primary pt-24 px-6 md:px-16 pb-20">
-      <div className="flex items-center gap-4 mb-12">
-        <Bookmark className="w-10 h-10 text-accent-red" />
-        <h1 className="text-4xl md:text-5xl font-black tracking-tighter">My Watchlist</h1>
+    <div className="min-h-screen bg-bg-primary pt-24 px-4 sm:px-8 md:px-16 pb-20">
+      <div className="flex items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
+        <Bookmark className="w-8 h-8 sm:w-10 sm:h-10 text-accent-red" />
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter uppercase italic">My Watchlist</h1>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="aspect-[2/3] bg-bg-secondary animate-pulse rounded-lg" />
           ))}
         </div>
       ) : !watchlist || watchlist.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-24 h-24 bg-bg-secondary rounded-full flex items-center justify-center mb-6">
-            <Bookmark className="w-10 h-10 text-text-muted" />
+        <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-bg-secondary rounded-full flex items-center justify-center mb-6">
+            <Bookmark className="w-8 h-8 sm:w-10 sm:h-10 text-text-muted" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Your watchlist is empty</h2>
-          <p className="text-text-secondary mb-8">Start adding movies and shows to keep track of them!</p>
-          <Link to="/movies" className="flex items-center gap-2 text-accent-red font-bold hover:underline">
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">Your watchlist is empty</h2>
+          <p className="text-sm sm:text-base text-text-secondary mb-8">Start adding movies and shows to keep track of them!</p>
+          <Link to="/movies" className="w-full sm:w-auto px-10 py-4 bg-accent-red text-white font-black rounded-full hover:bg-red-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-xl shadow-accent-red/20">
             Browse Movies <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
           {watchlist.map((item: any) => (
             <div key={item.id} className="relative group">
               <MovieCard

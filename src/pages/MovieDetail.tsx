@@ -82,19 +82,19 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 md:p-10"
+        className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-10"
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-6xl max-h-[90vh] bg-bg-primary rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 20, opacity: 0 }}
+          className="relative w-full max-w-6xl h-full max-h-[92vh] sm:max-h-[90vh] bg-bg-primary rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 z-50 p-2 bg-black/40 hover:bg-black/60 rounded-full transition-colors border border-white/10"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 p-2 bg-black/40 hover:bg-black/60 rounded-full transition-colors border border-white/10"
           >
             <X className="w-6 h-6" />
           </button>
@@ -111,9 +111,9 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
           </div>
 
           {/* Right Side: Content */}
-          <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-8 no-scrollbar">
+          <div className="flex-1 overflow-y-auto p-5 sm:p-8 md:p-12 space-y-8 no-scrollbar">
             {/* Backdrop for mobile */}
-            <div className="md:hidden absolute top-0 left-0 right-0 h-64 -z-10">
+            <div className="md:hidden absolute top-0 left-0 right-0 h-48 sm:h-64 -z-10">
               <img
                 src={backdropUrl}
                 alt=""
@@ -123,24 +123,24 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
               <div className="absolute inset-0 bg-gradient-to-t from-bg-primary to-transparent" />
             </div>
 
-            <div className="space-y-4 pt-20 md:pt-0">
+            <div className="space-y-4 pt-40 sm:pt-48 md:pt-0">
               <div className="flex items-center gap-3">
                 <span className="px-3 py-1 bg-accent-red text-[10px] font-black uppercase rounded">
                   {type === 'movie' ? 'Movie' : 'TV Series'}
                 </span>
-                {details?.genres?.map((g: any) => (
+                {details?.genres?.slice(0, 2).map((g: any) => (
                   <span key={g.id} className="text-xs font-medium text-text-secondary">
                     {g.name}
                   </span>
                 ))}
               </div>
 
-              <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter leading-none">
                 {item.title}
               </h1>
 
               {details?.tagline && (
-                <p className="text-xl italic text-text-secondary font-medium">
+                <p className="text-lg italic text-text-secondary font-medium hidden sm:block">
                   "{details.tagline}"
                 </p>
               )}
@@ -181,16 +181,12 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                 }`}
               >
                 {isInWatchlist ? (
-                  <>
-                    <Check className="w-6 h-6" />
-                    ADDED TO LIST
-                  </>
+                  <Check className="w-6 h-6" />
                 ) : (
-                  <>
-                    <Plus className="w-6 h-6 group-hover/watchlist:rotate-90 transition-transform" />
-                    ADD TO LIST
-                  </>
+                  <Plus className="w-6 h-6 group-hover/watchlist:rotate-90 transition-transform" />
                 )}
+                <span className="hidden sm:inline">{isInWatchlist ? 'ADDED TO LIST' : 'ADD TO LIST'}</span>
+                <span className="sm:hidden">{isInWatchlist ? 'SAVED' : 'SAVE'}</span>
               </button>
             </div>
 
@@ -219,7 +215,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                       onClick={() => handleWatchNow(activeSeason, ep.episode_number)}
                       className="flex gap-4 p-3 rounded-2xl bg-white/5 border border-transparent hover:border-white/20 transition-all text-left group"
                     >
-                      <div className="relative flex-shrink-0 w-32 aspect-video rounded-xl overflow-hidden bg-bg-secondary">
+                      <div className="relative flex-shrink-0 w-24 sm:w-32 aspect-video rounded-xl overflow-hidden bg-bg-secondary">
                         <img
                           src={ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : posterUrl}
                           alt=""
@@ -237,7 +233,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                         <h4 className="text-sm font-bold truncate mb-1 group-hover:text-accent-red transition-colors">
                           {ep.name}
                         </h4>
-                        <p className="text-[10px] text-text-secondary line-clamp-2 leading-relaxed">
+                        <p className="text-[10px] text-text-secondary line-clamp-1 leading-relaxed">
                           {ep.overview || "No description available."}
                         </p>
                       </div>
@@ -249,7 +245,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
 
             <div className="space-y-4">
               <h3 className="text-lg font-bold uppercase tracking-widest text-text-secondary">Overview</h3>
-              <p className="text-lg leading-relaxed text-text-secondary max-w-3xl">
+              <p className="text-base sm:text-lg leading-relaxed text-text-secondary max-w-3xl">
                 {item.description}
               </p>
             </div>
@@ -260,17 +256,17 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                 <h3 className="text-lg font-bold uppercase tracking-widest text-text-secondary">Top Cast</h3>
                 <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
                   {credits.cast.slice(0, 10).map((person: any) => (
-                    <div key={person.id} className="flex-shrink-0 w-24 text-center space-y-2">
-                      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/5">
+                    <div key={person.id} className="flex-shrink-0 w-16 sm:w-24 text-center space-y-2">
+                      <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/5 mx-auto">
                         <img
-                          src={person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : 'https://via.placeholder.com/185x185?text=No+Image'}
+                          src={person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : 'https://picsum.photos/seed/person/185/185'}
                           alt={person.name}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
                       </div>
-                      <p className="text-xs font-bold truncate">{person.name}</p>
-                      <p className="text-[10px] text-text-muted truncate">{person.character}</p>
+                      <p className="text-[10px] sm:text-xs font-bold truncate">{person.name}</p>
+                      <p className="text-[9px] sm:text-[10px] text-text-muted truncate">{person.character}</p>
                     </div>
                   ))}
                 </div>

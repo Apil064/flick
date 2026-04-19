@@ -14,31 +14,31 @@ export const NewAndPopular: React.FC = () => {
   const isLoading = activeTab === 'movies' ? loadingMovies : loadingTV;
 
   return (
-    <div className="min-h-screen bg-bg-primary pt-24 px-6 md:px-16 pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tighter">New & Popular</h1>
+    <div className="min-h-screen bg-bg-primary pt-24 px-4 sm:px-8 md:px-16 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 sm:mb-12">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter uppercase italic">New & Popular</h1>
         
-        <div className="flex bg-bg-secondary p-1 rounded-full border border-white/5">
+        <div className="flex bg-bg-secondary p-1 rounded-xl sm:rounded-full border border-white/5">
           <button
             onClick={() => setActiveTab('movies')}
-            className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${
+            className={`flex-1 sm:flex-none px-4 sm:px-8 py-2 rounded-lg sm:rounded-full text-[10px] sm:text-sm font-black uppercase tracking-widest transition-all ${
               activeTab === 'movies' ? 'bg-accent-red text-white shadow-lg' : 'text-text-secondary hover:text-white'
             }`}
           >
-            New Movies
+            Movies
           </button>
           <button
             onClick={() => setActiveTab('tv')}
-            className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${
+            className={`flex-1 sm:flex-none px-4 sm:px-8 py-2 rounded-lg sm:rounded-full text-[10px] sm:text-sm font-black uppercase tracking-widest transition-all ${
               activeTab === 'tv' ? 'bg-accent-red text-white shadow-lg' : 'text-text-secondary hover:text-white'
             }`}
           >
-            New TV Shows
+            TV Shows
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-6">
         {isLoading ? (
           Array.from({ length: 18 }).map((_, i) => (
             <div key={i} className="aspect-[2/3] bg-bg-secondary animate-pulse rounded-lg" />

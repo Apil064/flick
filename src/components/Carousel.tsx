@@ -100,13 +100,13 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
 
   if (!items || items.length === 0) {
     return (
-      <div className="py-6 px-6 md:px-16 overflow-hidden">
+      <div className="py-6 px-4 sm:px-8 md:px-16 overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <div className="h-8 w-48 bg-white/5 animate-pulse rounded-lg" />
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-3 md:gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="flex-shrink-0 w-44 md:w-56 aspect-[2/3] bg-white/5 animate-pulse rounded-2xl" />
+            <div key={i} className="flex-shrink-0 w-[140px] md:w-[220px] aspect-[2/3] bg-white/5 animate-pulse rounded-2xl" />
           ))}
         </div>
       </div>
@@ -116,7 +116,7 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
   return (
     <div 
       ref={containerRef} 
-      className="relative group/carousel py-6 px-6 md:px-16 overflow-hidden"
+      className="relative group/carousel py-6 px-4 sm:px-8 md:px-16 overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -132,7 +132,7 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
         {showLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-0 bottom-0 z-40 w-12 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
+            className="absolute left-0 top-0 bottom-0 z-40 w-12 bg-black/60 backdrop-blur-sm hidden sm:flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
           >
             <ChevronLeft className="w-8 h-8 text-white" />
           </button>
@@ -147,12 +147,17 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleEnd}
-          className={`flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {displayItems.map((item) => (
             <div key={item.id} className="snap-start flex-shrink-0">
-              <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
+              <MovieCard 
+                item={item} 
+                type={type} 
+                onClick={() => onItemClick(item)} 
+                className="!w-[140px] md:!w-[220px]"
+              />
             </div>
           ))}
         </div>
@@ -160,7 +165,7 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
         {showRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-0 bottom-0 z-40 w-12 bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
+            className="absolute right-0 top-0 bottom-0 z-40 w-12 bg-black/60 backdrop-blur-sm hidden sm:flex items-center justify-center opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-300"
           >
             <ChevronRight className="w-8 h-8 text-white" />
           </button>

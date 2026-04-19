@@ -274,7 +274,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                   <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
                 </button>
                 <div className="flex flex-col">
-                  <h2 className="text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[180px] md:max-w-lg">
+                  <h2 className="text-base sm:text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[120px] sm:max-w-lg">
                     {title}
                   </h2>
                   {type === 'tv' && (
@@ -282,8 +282,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                       <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
                         S{currentSeason} • E{currentEpisode}
                       </span>
-                      <span className="w-1 h-1 rounded-full bg-white/20" />
-                      <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
+                      <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-white/20" />
+                      <span className="hidden sm:inline-block text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
                         {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
                       </span>
                     </div>
@@ -370,7 +370,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                       placeholder="Search episodes..."
                       value={episodeSearch}
                       onChange={(e) => setEpisodeSearch(e.target.value)}
-                      className="w-full bg-bg-secondary border border-white/10 rounded-xl pl-10 pr-4 py-2 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-accent-red transition-all"
+                      style={{ fontSize: '16px' }}
+                      className="w-full bg-bg-secondary border border-white/10 rounded-xl pl-10 pr-4 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest outline-none focus:border-accent-red transition-all"
                     />
                   </div>
                   <div className="flex items-center gap-2 bg-bg-secondary border border-white/10 rounded-xl px-4 py-2">
@@ -415,7 +416,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                           : 'bg-white/5 border-transparent hover:bg-white/10 hover:border-white/20'
                       }`}
                     >
-                      <div className="relative flex-shrink-0 w-36 md:w-44 aspect-video rounded-2xl overflow-hidden bg-bg-secondary shadow-lg">
+                      <div className="relative flex-shrink-0 w-32 sm:w-44 aspect-video rounded-2xl overflow-hidden bg-bg-secondary shadow-lg">
                         <img
                           src={ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : details?.backdrop_url}
                           alt=""
