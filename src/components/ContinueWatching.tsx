@@ -20,7 +20,7 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
       if (posterPath.startsWith('http')) return posterPath;
       return `https://image.tmdb.org/t/p/w500${posterPath}`;
     }
-    return 'https://via.placeholder.com/780x440?text=No+Image';
+    return ''; // Background will show white/5 loader base
   };
 
   if (!isSignedIn || isLoading || !history || history.length === 0) return null;

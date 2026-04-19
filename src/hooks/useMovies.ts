@@ -252,19 +252,7 @@ export const useSaveProgress = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => API.post('user/progress', data),
-    onMutate: async (newData) => {
-      await queryClient.cancelQueries({ queryKey: ['continue-watching'] });
-      const previousHistory = queryClient.getQueryData(['continue-watching']);
-      queryClient.setQueryData(['continue-watching'], (old: any) => {
-        const filtered = (old || []).filter((item: any) => String(item.tmdb_id) !== String(newData.tmdb_id));
-        return [{ ...newData, id: Date.now(), last_watched: new Date().toISOString() }, ...filtered];
-      });
-      return { previousHistory };
-    },
-    onError: (err, newData, context) => {
-      queryClient.setQueryData(['continue-watching'], context?.previousHistory);
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['continue-watching'] });
     },
   });

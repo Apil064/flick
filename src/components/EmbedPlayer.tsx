@@ -35,6 +35,9 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const { mutate: saveProgress } = useSaveProgress();
   const [localProgress, setLocalProgress] = useState(startTime);
   const [localDuration, setLocalDuration] = useState(0);
+  
+  const progressRef = useRef(startTime);
+  const durationRef = useRef(0);
 
   const getCleanPath = (path?: string) => {
     if (!path) return '';
@@ -74,62 +77,70 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     fetchSource();
   }, [tmdbId, type, currentSeason, currentEpisode]);
 
-  // Initialize localProgress correctly when startTime changes
+  // Initialize localProgress and ref correctly when startTime changes
   useEffect(() => {
     setLocalProgress(startTime);
+    progressRef.current = startTime;
   }, [startTime, tmdbId, currentSeason, currentEpisode]);
 
   // Progress tracking for iframe fallback
   useEffect(() => {
     if (videoSource) return; // Custom player handles its own progress
     const interval = setInterval(() => {
-      setLocalProgress(prev => prev + 1);
+      setLocalProgress(prev => {
+        const next = prev + 1;
+        progressRef.current = next;
+        return next;
+      });
     }, 1000);
     return () => clearInterval(interval);
   }, [tmdbId, currentSeason, currentEpisode, videoSource]);
 
-  // Auto-next logic
+  // Auto-next logic - reading from refs for stability
   useEffect(() => {
     if (!autoNext || type !== 'tv' || !details || !seasonDetails) return;
     
-    const duration = localDuration || (details?.runtime || 120) * 60;
-    // If we're near the end (e.g., last 30 seconds), check for next episode
-    if (localProgress >= duration - 30 && duration > 0) {
-      const nextEp = seasonDetails.episodes.find((e: any) => e.episode_number === currentEpisode + 1);
-      if (nextEp) {
-        handleEpisodeChange(currentSeason, nextEp.episode_number);
-        setLocalProgress(0);
-      } else {
-        // Check next season
-        const nextSeason = details.seasons.find((s: any) => s.season_number === currentSeason + 1);
-        if (nextSeason) {
-          setCurrentSeason(nextSeason.season_number);
-          setCurrentEpisode(1);
-          setLocalProgress(0);
+    const checkAutoNext = () => {
+      const duration = durationRef.current || (details?.episode_run_time?.[0] || 45) * 60;
+      const progress = progressRef.current;
+      
+      // If we're near the end (e.g., last 30 seconds), check for next episode
+      if (progress >= duration - 30 && duration > 0) {
+        const nextEp = seasonDetails.episodes.find((e: any) => e.episode_number === currentEpisode + 1);
+        if (nextEp) {
+          handleEpisodeChange(currentSeason, nextEp.episode_number);
+        } else {
+          // Check next season
+          const nextSeason = details.seasons.find((s: any) => s.season_number === currentSeason + 1);
+          if (nextSeason) {
+            handleEpisodeChange(nextSeason.season_number, 1);
+          }
         }
       }
-    }
-  }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason, localDuration]);
+    };
+
+    const interval = setInterval(checkAutoNext, 10000);
+    return () => clearInterval(interval);
+  }, [autoNext, type, details, seasonDetails, currentEpisode, currentSeason]);
 
   useEffect(() => {
-    const progressRef = { current: localProgress };
-    progressRef.current = localProgress;
+    const buildProgressData = () => {
+      const duration = durationRef.current || (type === 'movie' 
+        ? (details?.runtime || 120) * 60 
+        : (details?.episode_run_time?.[0] || 45) * 60);
 
-    const duration = localDuration || (type === 'movie' 
-      ? (details?.runtime || 120) * 60 
-      : (details?.episode_run_time?.[0] || 45) * 60);
-
-    const buildProgressData = () => ({
-      tmdb_id: tmdbId,
-      media_type: type,
-      title: title,
-      poster_path: getCleanPath(posterPath || details?.poster_url),
-      backdrop_path: getCleanPath(backdropPath || details?.backdrop_url),
-      season: type === 'tv' ? currentSeason : 0,
-      episode: type === 'tv' ? currentEpisode : 0,
-      progress_seconds: Math.floor(progressRef.current),
-      duration_seconds: Math.floor(duration)
-    });
+      return {
+        tmdb_id: tmdbId,
+        media_type: type,
+        title: title,
+        poster_path: getCleanPath(posterPath || details?.poster_url),
+        backdrop_path: getCleanPath(backdropPath || details?.backdrop_url),
+        season: type === 'tv' ? currentSeason : 0,
+        episode: type === 'tv' ? currentEpisode : 0,
+        progress_seconds: Math.floor(progressRef.current),
+        duration_seconds: Math.floor(duration)
+      };
+    };
 
     const saveInterval = setInterval(() => {
       saveProgress(buildProgressData());
@@ -137,14 +148,11 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
 
     const handleUnload = () => {
       const data = buildProgressData();
-      const baseUrl = import.meta.env.VITE_API_URL || '/api';
-      // Ensure the URL is clean and points to /user/progress
-      const url = `${baseUrl.replace(/\/$/, '')}/user/progress`;
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       
       try {
         if (navigator.sendBeacon) {
-          navigator.sendBeacon(url, blob);
+          navigator.sendBeacon('/api/user/progress', blob);
         } else {
           saveProgress(data);
         }
@@ -152,6 +160,11 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
         saveProgress(data);
       }
     };
+
+    // Immediate save after mount so it appears in Continue Watching right away
+    const initialSaveTimeout = setTimeout(() => {
+      saveProgress(buildProgressData());
+    }, 2000);
 
     window.addEventListener('beforeunload', handleUnload);
     window.addEventListener('visibilitychange', () => {
@@ -162,10 +175,11 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
 
     return () => {
       clearInterval(saveInterval);
+      clearTimeout(initialSaveTimeout);
       window.removeEventListener('beforeunload', handleUnload);
       handleUnload();
     };
-  }, [tmdbId, type, currentSeason, currentEpisode, localProgress, localDuration, title, posterPath, backdropPath, details]);
+  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details]);
 
   const fallbackVideoUrl = type === 'movie'
     ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
@@ -239,6 +253,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
             onProgress={(p, d) => {
               setLocalProgress(p);
               setLocalDuration(d);
+              progressRef.current = p;
+              durationRef.current = d;
             }}
             onToggleEpisodeList={() => setShowEpisodeList(!showEpisodeList)}
           />
