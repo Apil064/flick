@@ -36,6 +36,14 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [localProgress, setLocalProgress] = useState(startTime);
   const [localDuration, setLocalDuration] = useState(0);
 
+  const getCleanPath = (path?: string) => {
+    if (!path) return '';
+    return path
+      .replace('https://image.tmdb.org/t/p/w500', '')
+      .replace('https://image.tmdb.org/t/p/original', '')
+      .replace('https://image.tmdb.org/t/p/w780', '');
+  };
+
   // Fetch M3U8 source
   useEffect(() => {
     const fetchSource = async () => {
@@ -104,14 +112,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason, localDuration]);
 
   useEffect(() => {
-    const getCleanPath = (path?: string) => {
-      if (!path) return '';
-      return path
-        .replace('https://image.tmdb.org/t/p/w500', '')
-        .replace('https://image.tmdb.org/t/p/original', '')
-        .replace('https://image.tmdb.org/t/p/w780', '');
-    };
-
     const progressRef = { current: localProgress };
     progressRef.current = localProgress;
 
@@ -136,15 +136,34 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     }, 15000);
 
     const handleUnload = () => {
-      saveProgress(buildProgressData());
+      const data = buildProgressData();
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      // Ensure the URL is clean and points to /user/progress
+      const url = `${baseUrl.replace(/\/$/, '')}/user/progress`;
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      
+      try {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(url, blob);
+        } else {
+          saveProgress(data);
+        }
+      } catch (e) {
+        saveProgress(data);
+      }
     };
 
     window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        handleUnload();
+      }
+    });
 
     return () => {
       clearInterval(saveInterval);
       window.removeEventListener('beforeunload', handleUnload);
-      saveProgress(buildProgressData());
+      handleUnload();
     };
   }, [tmdbId, type, currentSeason, currentEpisode, localProgress, localDuration, title, posterPath, backdropPath, details]);
 
@@ -171,13 +190,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const handleEpisodeChange = (s: number, e: number) => {
     // Save progress of current episode before switching
     const duration = localDuration || (details?.episode_run_time?.[0] || 45) * 60;
-    const getCleanPath = (path?: string) => {
-      if (!path) return '';
-      return path.replace('https://image.tmdb.org/t/p/w500', '')
-                 .replace('https://image.tmdb.org/t/p/original', '')
-                 .replace('https://image.tmdb.org/t/p/w780', '');
-    };
-
+    
+    // Use the saveProgress mutation directly for synchronous-looking but reliable saving during the session
     saveProgress({
       tmdb_id: tmdbId,
       media_type: type,
