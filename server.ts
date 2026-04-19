@@ -113,6 +113,12 @@ async function startServer() {
       console.error("⚠️ Database connection failed. Watchlist and History features may not work.");
       console.error("   Error:", err.message);
     }
+
+    // Self-ping to prevent Render free tier from spinning down
+    setInterval(() => {
+      fetch('https://flick-ao57.onrender.com/api/health')
+        .catch(() => {});
+    }, 10 * 60 * 1000);
   });
 }
 
