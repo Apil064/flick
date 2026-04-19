@@ -90,13 +90,17 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
   }, [handleMouseMove]);
 
   // Video event handlers
-  const togglePlay = () => {
+  const togglePlay = useCallback(() => {
     if (videoRef.current) {
-      if (isPlaying) videoRef.current.pause();
-      else videoRef.current.play();
-      setIsPlaying(!isPlaying);
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
     }
-  };
+  }, []);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
@@ -108,11 +112,11 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
     }
   };
 
-  const seek = (amount: number) => {
+  const seek = useCallback((amount: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime += amount;
     }
-  };
+  }, []);
 
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
@@ -122,12 +126,12 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
     }
-  };
+  }, []);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
@@ -138,7 +142,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
     }
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen();
       setIsFullscreen(true);
@@ -146,7 +150,67 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
       document.exitFullscreen();
       setIsFullscreen(false);
     }
-  };
+  }, []);
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (
+        document.activeElement?.tagName === 'INPUT' || 
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) return;
+
+      handleMouseMove(); // Show controls on any action
+
+      switch (e.key.toLowerCase()) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          togglePlay();
+          break;
+        case 'arrowleft':
+          seek(-5);
+          break;
+        case 'arrowright':
+          seek(5);
+          break;
+        case 'j':
+          seek(-10);
+          break;
+        case 'l':
+          seek(10);
+          break;
+        case 'f':
+          toggleFullscreen();
+          break;
+        case 'm':
+          toggleMute();
+          break;
+        case 'arrowup':
+          e.preventDefault();
+          if (videoRef.current) {
+            const nextVolume = Math.min(1, videoRef.current.volume + 0.1);
+            videoRef.current.volume = nextVolume;
+            setVolume(nextVolume);
+            setIsMuted(nextVolume === 0);
+          }
+          break;
+        case 'arrowdown':
+          e.preventDefault();
+          if (videoRef.current) {
+            const nextVolume = Math.max(0, videoRef.current.volume - 0.1);
+            videoRef.current.volume = nextVolume;
+            setVolume(nextVolume);
+            setIsMuted(nextVolume === 0);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [togglePlay, seek, toggleMute, toggleFullscreen, handleMouseMove]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
