@@ -8,6 +8,18 @@ interface ContinueWatchingProps {
 }
 
 export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) => {
+  const getImageUrl = (backdropPath?: string, posterPath?: string) => {
+    if (backdropPath) {
+      if (backdropPath.startsWith('http')) return backdropPath;
+      return `https://image.tmdb.org/t/p/w780${backdropPath}`;
+    }
+    if (posterPath) {
+      if (posterPath.startsWith('http')) return posterPath;
+      return `https://image.tmdb.org/t/p/w500${posterPath}`;
+    }
+    return 'https://via.placeholder.com/780x440?text=No+Image';
+  };
+
   const { isSignedIn } = useUser();
   const { data: history, isLoading } = useContinueWatching();
 
@@ -35,13 +47,7 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
             >
               <div className="relative aspect-video rounded-2xl overflow-hidden mb-4 bg-white/5 border border-white/10 shadow-2xl">
                 <img
-                  src={item.backdrop_path?.startsWith('http') 
-                    ? item.backdrop_path 
-                    : (item.backdrop_path 
-                      ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` 
-                      : (item.poster_path?.startsWith('http') 
-                        ? item.poster_path 
-                        : `https://image.tmdb.org/t/p/w500${item.poster_path}`))}
+                  src={getImageUrl(item.backdrop_path, item.poster_path)}
                   alt={item.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   referrerPolicy="no-referrer"

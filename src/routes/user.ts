@@ -53,13 +53,16 @@ router.get('/continue-watching', async (req, res) => {
   try {
     // @ts-ignore
     const userId = req.auth.userId;
-    // Filter for progress between 5% and 90%
+    // Filter for progress between 2% and 95%, or items with 0 duration
     const result = await query(
       `SELECT * FROM watch_history 
        WHERE user_id = $1 
-       AND duration_seconds > 0
-       AND (progress_seconds::float / duration_seconds) BETWEEN 0.05 AND 0.90
-       ORDER BY last_watched DESC`, 
+       AND (
+         duration_seconds = 0 
+         OR (duration_seconds > 0 AND (progress_seconds::float / duration_seconds) BETWEEN 0.02 AND 0.95)
+       )
+       ORDER BY last_watched DESC
+       LIMIT 20`,
       [userId]
     );
     res.json(result.rows);

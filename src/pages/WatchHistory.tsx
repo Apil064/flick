@@ -8,6 +8,18 @@ import { Link } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 
 export const WatchHistory: React.FC = () => {
+  const getImageUrl = (backdropPath?: string, posterPath?: string) => {
+    if (backdropPath) {
+      if (backdropPath.startsWith('http')) return backdropPath;
+      return `https://image.tmdb.org/t/p/w780${backdropPath}`;
+    }
+    if (posterPath) {
+      if (posterPath.startsWith('http')) return posterPath;
+      return `https://image.tmdb.org/t/p/w500${posterPath}`;
+    }
+    return 'https://via.placeholder.com/780x440?text=No+Image';
+  };
+
   const { isSignedIn, isLoaded } = useUser();
   const { data: history, isLoading } = useWatchHistory();
   const { mutate: removeFromHistory } = useRemoveFromHistory();
@@ -102,13 +114,7 @@ export const WatchHistory: React.FC = () => {
               >
                 <div className="aspect-video relative overflow-hidden">
                   <img
-                    src={item.backdrop_path?.startsWith('http') 
-                      ? item.backdrop_path 
-                      : (item.backdrop_path 
-                        ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` 
-                        : (item.poster_path?.startsWith('http') 
-                          ? item.poster_path 
-                          : `https://image.tmdb.org/t/p/w500${item.poster_path}`))}
+                    src={getImageUrl(item.backdrop_path, item.poster_path)}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
@@ -164,12 +170,12 @@ export const WatchHistory: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-text-muted">
                       <span>Progress</span>
-                      <span>{Math.round((item.progress_seconds / item.duration_seconds) * 100)}%</span>
+                      <span>{item.duration_seconds > 0 ? Math.round((item.progress_seconds / item.duration_seconds) * 100) : 0}%</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-accent-red shadow-[0_0_10px_rgba(229,9,20,0.5)]" 
-                        style={{ width: `${(item.progress_seconds / item.duration_seconds) * 100}%` }}
+                        style={{ width: `${item.duration_seconds > 0 ? (item.progress_seconds / item.duration_seconds) * 100 : 0}%` }}
                       />
                     </div>
                   </div>

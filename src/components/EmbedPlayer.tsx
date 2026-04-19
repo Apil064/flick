@@ -104,18 +104,22 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   }, [localProgress, autoNext, type, details, seasonDetails, currentEpisode, currentSeason, localDuration]);
 
   useEffect(() => {
-    const duration = localDuration || (type === 'movie' 
-      ? (details?.runtime || 120) * 60 
-      : (details?.episode_run_time?.[0] || 45) * 60);
-
     const getCleanPath = (path?: string) => {
       if (!path) return '';
-      return path.replace('https://image.tmdb.org/t/p/w500', '')
-                 .replace('https://image.tmdb.org/t/p/original', '')
-                 .replace('https://image.tmdb.org/t/p/w780', '');
+      return path
+        .replace('https://image.tmdb.org/t/p/w500', '')
+        .replace('https://image.tmdb.org/t/p/original', '')
+        .replace('https://image.tmdb.org/t/p/w780', '');
     };
 
-    const progressData = {
+    const progressRef = { current: localProgress };
+    progressRef.current = localProgress;
+
+    const duration = localDuration || (type === 'movie'
+      ? (details?.runtime || 120) * 60
+      : (details?.episode_run_time?.[0] || 45) * 60);
+
+    const buildProgressData = () => ({
       tmdb_id: tmdbId,
       media_type: type,
       title: title,
@@ -123,34 +127,27 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       backdrop_path: getCleanPath(backdropPath || details?.backdrop_url),
       season: type === 'tv' ? currentSeason : 0,
       episode: type === 'tv' ? currentEpisode : 0,
-      progress_seconds: Math.floor(localProgress),
+      progress_seconds: Math.floor(progressRef.current),
       duration_seconds: Math.floor(duration)
-    };
+    });
 
     const saveInterval = setInterval(() => {
-      saveProgress(progressData);
-    }, 30000);
+      saveProgress(buildProgressData());
+    }, 15000);
 
     const handleUnload = () => {
-      // Use navigator.sendBeacon for reliable saving on page unload/close
-      const url = `${import.meta.env.VITE_API_URL || '/api'}/user/history`;
-      const blob = new Blob([JSON.stringify(progressData)], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
+      saveProgress(buildProgressData());
     };
 
     window.addEventListener('beforeunload', handleUnload);
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        handleUnload();
-      }
-    });
-
+    
     return () => {
       clearInterval(saveInterval);
       window.removeEventListener('beforeunload', handleUnload);
-      handleUnload(); // Save progress on component unmount
+      saveProgress(buildProgressData());
     };
-  }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details?.poster_url, details?.backdrop_url, details?.runtime, details?.episode_run_time, localProgress, localDuration]);
+  }, [tmdbId, type, currentSeason, currentEpisode, localProgress, localDuration,
+      title, posterPath, backdropPath, details]);
 
   const fallbackVideoUrl = type === 'movie'
     ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
