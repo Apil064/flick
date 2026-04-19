@@ -16,24 +16,24 @@ export const NewAndPopular: React.FC = () => {
   return (
     <div className="min-h-screen bg-bg-primary pt-24 px-4 sm:px-8 md:px-16 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 sm:mb-12">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter uppercase italic">New & Popular</h1>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter">New & Popular</h1>
         
         <div className="flex bg-bg-secondary p-1 rounded-xl sm:rounded-full border border-white/5">
           <button
             onClick={() => setActiveTab('movies')}
-            className={`flex-1 sm:flex-none px-4 sm:px-8 py-2 rounded-lg sm:rounded-full text-[10px] sm:text-sm font-black uppercase tracking-widest transition-all ${
+            className={`flex-1 sm:flex-none px-4 sm:px-8 py-2 rounded-lg sm:rounded-full text-sm font-bold transition-all ${
               activeTab === 'movies' ? 'bg-accent-red text-white shadow-lg' : 'text-text-secondary hover:text-white'
             }`}
           >
-            Movies
+            New Movies
           </button>
           <button
             onClick={() => setActiveTab('tv')}
-            className={`flex-1 sm:flex-none px-4 sm:px-8 py-2 rounded-lg sm:rounded-full text-[10px] sm:text-sm font-black uppercase tracking-widest transition-all ${
+            className={`flex-1 sm:flex-none px-4 sm:px-8 py-2 rounded-lg sm:rounded-full text-sm font-bold transition-all ${
               activeTab === 'tv' ? 'bg-accent-red text-white shadow-lg' : 'text-text-secondary hover:text-white'
             }`}
           >
-            TV Shows
+            New TV Shows
           </button>
         </div>
       </div>

@@ -274,16 +274,16 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                   <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
                 </button>
                 <div className="flex flex-col">
-                  <h2 className="text-base sm:text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[120px] sm:max-w-lg">
+                  <h2 className="text-base sm:text-lg font-bold tracking-tighter text-white drop-shadow-2xl truncate max-w-[120px] sm:max-w-lg">
                     {title}
                   </h2>
                   {type === 'tv' && (
                     <div className="flex items-center gap-2.5 mt-0.5">
-                      <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
+                      <span className="text-[10px] text-accent-red font-bold uppercase tracking-wider drop-shadow-md">
                         S{currentSeason} • E{currentEpisode}
                       </span>
                       <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-white/20" />
-                      <span className="hidden sm:inline-block text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
+                      <span className="hidden sm:inline-block text-[10px] text-white/40 font-medium uppercase tracking-wider truncate max-w-[120px] md:max-w-xs">
                         {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
                       </span>
                     </div>
@@ -295,7 +295,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                 {type === 'tv' && (
                   <button
                     onClick={() => setShowEpisodeList(!showEpisodeList)}
-                    className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all border backdrop-blur-xl shadow-2xl ${
+                    className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-bold text-xs transition-all border backdrop-blur-xl shadow-2xl ${
                       showEpisodeList 
                         ? 'bg-accent-red border-accent-red text-white' 
                         : 'bg-black/40 border-white/10 text-white hover:bg-white/10'
@@ -353,7 +353,7 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
             >
               <div className="p-8 border-b border-white/5 space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-black tracking-tighter uppercase italic text-accent-red">Episodes</h3>
+                  <h3 className="text-2xl font-bold tracking-tighter text-accent-red">Episodes</h3>
                   <button 
                     onClick={() => setShowEpisodeList(false)}
                     className="p-2 hover:bg-white/10 rounded-full transition-colors border border-white/5"

@@ -32,7 +32,7 @@ export const Watchlist: React.FC = () => {
     <div className="min-h-screen bg-bg-primary pt-24 px-4 sm:px-8 md:px-16 pb-20">
       <div className="flex items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
         <Bookmark className="w-8 h-8 sm:w-10 sm:h-10 text-accent-red" />
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter uppercase italic">My Watchlist</h1>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter">My Watchlist</h1>
       </div>
 
       {isLoading ? (
@@ -48,7 +48,7 @@ export const Watchlist: React.FC = () => {
           </div>
           <h2 className="text-xl sm:text-2xl font-bold mb-2">Your watchlist is empty</h2>
           <p className="text-sm sm:text-base text-text-secondary mb-8">Start adding movies and shows to keep track of them!</p>
-          <Link to="/movies" className="w-full sm:w-auto px-10 py-4 bg-accent-red text-white font-black rounded-full hover:bg-red-700 transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-xl shadow-accent-red/20">
+          <Link to="/movies" className="w-full sm:w-auto px-8 py-3 bg-accent-red text-white font-bold rounded-full hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-accent-red/20">
             Browse Movies <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

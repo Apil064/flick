@@ -65,7 +65,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
           className="max-w-2xl space-y-4"
         >
           <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 bg-accent-red text-[9px] font-black uppercase rounded tracking-widest">
+            <span className="px-2 py-0.5 bg-accent-red text-[9px] font-bold uppercase rounded tracking-wider">
               TOP 10 TRENDING TODAY
             </span>
             <span className="flex items-center gap-1 text-yellow-500 font-bold text-xs">
@@ -83,14 +83,14 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
               referrerPolicy="no-referrer"
             />
           ) : (
-            <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[0.95] text-shadow-lg text-white">
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tighter leading-[0.95] text-shadow-lg text-white">
               {currentItem.title}
             </h1>
           )}
 
           <div className="flex flex-wrap gap-x-2.5 gap-y-1">
             {details?.genres?.slice(0, 3).map((g: any) => (
-              <span key={g.id} className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">
+              <span key={g.id} className="text-[10px] font-medium text-text-secondary uppercase tracking-wider">
                 {g.name}
               </span>
             ))}
@@ -103,17 +103,17 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
           <div className="flex flex-wrap gap-3 pt-2">
             <button 
               onClick={() => onItemClick(currentItem, type)}
-              className="min-w-[140px] px-6 py-2.5 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group shadow-lg"
+              className="min-w-[140px] px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group shadow-lg"
             >
               <Play className="w-4 h-4 fill-black" />
-              <span className="tracking-tighter text-xs uppercase">PLAY NOW</span>
+              <span className="text-sm">Play Now</span>
             </button>
             <button 
               onClick={() => onItemClick(currentItem, type)}
-              className="min-w-[140px] px-6 py-2.5 bg-bg-secondary/40 backdrop-blur-xl text-white font-black rounded-full hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center gap-2 shadow-lg"
+              className="min-w-[140px] px-6 py-3 bg-bg-secondary/40 backdrop-blur-xl text-white font-bold rounded-full hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center gap-2 shadow-lg"
             >
               <Info className="w-4 h-4" />
-              <span className="tracking-tighter text-xs uppercase">MORE INFO</span>
+              <span className="text-sm">More Info</span>
             </button>
           </div>
         </motion.div>

@@ -124,8 +124,8 @@ export const Carousel: React.FC<CarouselProps> = ({ title, items, type, onItemCl
       }}
     >
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl md:text-3xl font-black tracking-tighter uppercase italic text-white/90">{title}</h2>
-        <button className="text-xs font-black uppercase tracking-widest text-accent-red hover:text-white transition-colors">See All</button>
+        <h2 className="text-xl md:text-3xl font-bold tracking-tighter text-white/90">{title}</h2>
+        <button className="text-xs font-bold text-accent-red hover:text-white transition-colors">See All</button>
       </div>
 
       <div className="relative">

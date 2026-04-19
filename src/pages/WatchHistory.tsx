@@ -74,7 +74,7 @@ export const WatchHistory: React.FC = () => {
             <Link to="/" className="text-accent-red flex items-center gap-2 text-xs font-black uppercase tracking-widest mb-4 hover:text-white transition-colors">
               <ChevronLeft className="w-4 h-4" /> Back to Home
             </Link>
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter uppercase italic text-white">Watch History</h1>
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter text-white">Watch History</h1>
             <p className="text-sm sm:text-base text-text-secondary font-medium">Manage your recently watched movies and TV shows.</p>
           </div>
           

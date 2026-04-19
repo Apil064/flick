@@ -47,19 +47,19 @@ export const Movies: React.FC = () => {
         )}
 
         <div className="absolute inset-0 flex flex-col justify-end px-4 sm:px-8 md:px-16 pb-12 space-y-4">
-          <h1 className="text-3xl md:text-6xl font-black tracking-tighter leading-none">{featured?.title}</h1>
+          <h1 className="text-3xl md:text-6xl font-bold tracking-tighter leading-none">{featured?.title}</h1>
           <div className="flex gap-4">
             <button 
               onClick={() => handleItemClick(featured)}
-              className="px-6 py-2.5 sm:px-8 sm:py-3 bg-white text-black text-sm font-black rounded-full hover:bg-zinc-200 transition-all flex items-center gap-2 uppercase tracking-tighter"
+              className="px-6 py-2.5 sm:px-8 sm:py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all flex items-center gap-2"
             >
-              <Play className="w-5 h-5 fill-black" /> PLAY
+              <Play className="w-5 h-5 fill-black" /> Play
             </button>
             <button 
               onClick={() => handleItemClick(featured)}
-              className="px-6 py-2.5 sm:px-8 sm:py-3 bg-bg-secondary/60 backdrop-blur-md text-white text-sm font-black rounded-full hover:bg-white/20 transition-all border border-white/10 flex items-center gap-2 uppercase tracking-tighter"
+              className="px-6 py-2.5 sm:px-8 sm:py-3 bg-bg-secondary/60 backdrop-blur-md text-white font-bold rounded-full hover:bg-white/20 transition-all border border-white/10 flex items-center gap-2"
             >
-              <Info className="w-5 h-5" /> INFO
+              <Info className="w-5 h-5" /> Info
             </button>
           </div>
         </div>
@@ -71,7 +71,7 @@ export const Movies: React.FC = () => {
           <button
             key={genre.id}
             onClick={() => setActiveGenre(genre)}
-            className={`px-4 py-1.5 sm:px-6 sm:py-2 rounded-lg sm:rounded-full text-xs sm:text-sm font-black transition-all whitespace-nowrap uppercase tracking-widest ${
+            className={`px-4 py-1.5 sm:px-6 sm:py-2 rounded-lg sm:rounded-full text-sm font-bold transition-all whitespace-nowrap ${
               activeGenre.id === genre.id
                 ? 'bg-accent-red text-white'
                 : 'bg-bg-secondary text-text-secondary hover:text-white'

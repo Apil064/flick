@@ -71,7 +71,7 @@ export const Navbar: React.FC = () => {
             className="hidden md:flex items-center gap-2 p-2 hover:bg-white/10 rounded-full transition-colors text-text-secondary hover:text-white"
           >
             <Bookmark className="w-5 h-5" />
-            <span className="text-xs font-bold uppercase tracking-widest">Watchlist</span>
+            <span className="text-xs font-medium">Watchlist</span>
           </Link>
 
           <div className="flex items-center gap-2 sm:gap-4">
@@ -79,7 +79,7 @@ export const Navbar: React.FC = () => {
               <UserMenu />
             ) : (
               <SignInButton mode="modal">
-                <button className="px-3 sm:px-5 py-2 bg-white text-black text-[10px] sm:text-xs font-bold rounded-full hover:bg-zinc-200 transition-colors uppercase tracking-widest">
+                <button className="px-5 py-2 bg-white text-black text-sm font-bold rounded-full hover:bg-zinc-200 transition-colors">
                   Sign In
                 </button>
               </SignInButton>

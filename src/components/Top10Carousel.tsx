@@ -74,11 +74,11 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
   }
 
   return (
-    <div className="relative group/carousel py-16 px-6 md:px-16 overflow-hidden bg-black/20">
-      <div className="flex items-center gap-4 mb-12">
-        <h2 className="text-3xl sm:text-4xl md:text-7xl font-black tracking-tighter uppercase italic text-white flex items-baseline gap-4">
-          <span className="text-transparent" style={{ WebkitTextStroke: '2px #E50914' }}>TOP 10</span>
-          <span className="text-[10px] md:text-xl tracking-[0.3em] font-bold text-white/90 not-italic uppercase">CONTENT TODAY</span>
+    <div className="relative group/carousel py-12 px-4 sm:px-8 md:px-16 overflow-hidden bg-black/20">
+      <div className="flex items-center gap-4 mb-8">
+        <h2 className="text-2xl md:text-5xl font-bold tracking-tighter text-white flex items-baseline gap-3">
+          <span className="text-transparent" style={{ WebkitTextStroke: '1.5px #E50914' }}>Top 10</span>
+          <span className="text-[10px] md:text-xs font-bold text-text-secondary tracking-widest uppercase">Content Today</span>
         </h2>
       </div>
 
