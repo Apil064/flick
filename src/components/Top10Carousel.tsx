@@ -64,9 +64,14 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
     return (
       <div className="py-16 px-6 md:px-16 overflow-hidden bg-black/20">
         <div className="h-20 md:h-28 w-2/3 bg-white/5 animate-pulse rounded-2xl mb-12" />
-        <div className="flex gap-8 px-16 md:px-24">
+        <div className="flex gap-4 md:gap-8 overflow-x-auto scrollbar-hide pb-12 pt-10 px-16 md:px-24">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex-shrink-0 w-44 md:w-56 aspect-[2/3] bg-white/5 animate-pulse rounded-2xl" />
+            <div key={i} className="flex-shrink-0 relative flex items-end pl-10 md:pl-16">
+              {/* Number Skeleton */}
+              <div className="absolute left-0 bottom-[-5%] z-10 w-16 md:w-24 h-24 md:h-32 bg-white/5 animate-pulse rounded-xl" />
+              {/* Card Skeleton */}
+              <div className="relative z-20 w-[140px] md:w-[180px] aspect-[2/3] bg-white/5 animate-pulse rounded-lg" />
+            </div>
           ))}
         </div>
       </div>
@@ -102,15 +107,15 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {displayItems.map((item, index) => (
-            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end pl-10 md:pl-14">
+            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end pl-10 md:pl-16">
               {/* Numeric Badge */}
-              <div className="absolute left-0 bottom-[-5%] z-10 select-none pointer-events-none transition-all duration-500 group-hover/item:-translate-x-3 md:group-hover/item:-translate-x-5 origin-bottom-right">
-                <span className="text-[80px] md:text-[130px] font-black leading-[0.8] tracking-tighter transition-all duration-500"
+              <div className="absolute left-0 bottom-[-5%] z-10 select-none pointer-events-none transition-transform duration-500 ease-out group-hover/item:-translate-x-2 md:group-hover/item:-translate-x-2">
+                <span className="text-[100px] md:text-[160px] font-black leading-[0.7] tracking-tighter transition-all duration-500 block"
                       style={{ 
-                        WebkitTextStroke: '1.5px #E50914',
+                        WebkitTextStroke: '2px #E50914',
                         color: 'transparent',
                       }}>
-                  <span className="relative">
+                  <span className="relative inline-block">
                     {/* Outline Layer */}
                     {index + 1}
                     {/* Fill Layer (Visible on Hover) */}
@@ -118,8 +123,8 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
                           style={{ 
                             color: '#E50914',
                             WebkitTextStroke: '0px',
-                            filter: 'drop-shadow(0 0 15px rgba(229,9,20,0.8))',
-                            background: 'linear-gradient(to bottom, #ff4d4d, #E50914)',
+                            filter: 'drop-shadow(0 0 20px rgba(229,9,20,0.6))',
+                            background: 'linear-gradient(to bottom, #ff3333, #E50914)',
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent'
                           }}>
@@ -129,8 +134,8 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
                 </span>
               </div>
               
-              <div className="relative z-20 transition-all duration-500">
-                <div className="relative rounded-lg overflow-hidden transition-all duration-500 shadow-2xl">
+              <div className="relative z-20 group-hover/item:z-30 transition-all duration-500">
+                <div className="relative rounded-lg transition-all duration-500 shadow-2xl">
                   <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
                 </div>
               </div>
