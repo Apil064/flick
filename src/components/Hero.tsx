@@ -30,8 +30,8 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
 
   if (!currentItem) return null;
 
-  const handleDragEnd = (event: any, info: any) => {
-    const threshold = 100;
+  const handleDragEnd = (_event: any, info: any) => {
+    const threshold = 50;
     if (info.offset.x > threshold) {
       // Swipe right -> previous
       setIndex((prev) => (prev - 1 + Math.min(items.length, 10)) % Math.min(items.length, 10));
@@ -57,7 +57,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
           transition={{ duration: 1 }}
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.5}
+          dragElastic={0.2}
           onDragEnd={handleDragEnd}
           className="absolute inset-0 cursor-grab active:cursor-grabbing"
         >
@@ -69,12 +69,11 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
           />
           <div className="absolute inset-0 hero-gradient pointer-events-none" />
           
-          <div className="absolute inset-0 flex flex-col justify-end px-6 md:px-16 pt-20 pb-32 md:pb-48 pointer-events-none">
+          <div className="absolute inset-0 flex flex-col justify-end px-6 md:px-16 pt-20 pb-16 md:pb-24 pointer-events-none">
             <motion.div
-              key={currentItem.id}
-              initial={{ y: 30, opacity: 0 }}
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
               className="max-w-2xl space-y-4 pointer-events-auto"
             >
               <div className="flex items-center gap-2 mb-1">
