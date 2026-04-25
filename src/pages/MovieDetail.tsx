@@ -323,8 +323,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
             season={selectedEpisode.season}
             episode={selectedEpisode.episode}
             title={item.title || item.name}
-            posterPath={item.poster_path}
-            backdropPath={item.backdrop_path}
+            posterPath={selectedEpisode.posterPath}
+            backdropPath={selectedEpisode.backdropPath}
             startTime={selectedEpisode.startTime}
             onClose={() => setShowPlayer(false)}
           />

@@ -88,6 +88,9 @@ router.post('/progress', async (req, res) => {
       ON CONFLICT (user_id, tmdb_id, season, episode) DO UPDATE SET
         progress_seconds = EXCLUDED.progress_seconds,
         duration_seconds = EXCLUDED.duration_seconds,
+        poster_path = COALESCE(NULLIF(EXCLUDED.poster_path, ''), watch_history.poster_path),
+        backdrop_path = COALESCE(NULLIF(EXCLUDED.backdrop_path, ''), watch_history.backdrop_path),
+        title = EXCLUDED.title,
         last_watched = NOW()`,
       [userId, tmdb_id, media_type, title, poster_path, backdrop_path, s, e, progress_seconds, duration_seconds]
     );

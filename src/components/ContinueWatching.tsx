@@ -11,16 +11,21 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
   const { isSignedIn } = useUser();
   const { data: history, isLoading } = useContinueWatching();
 
-  const getImageUrl = (backdropPath?: string, posterPath?: string) => {
-    if (backdropPath) {
-      if (backdropPath.startsWith('http')) return backdropPath;
-      return `https://image.tmdb.org/t/p/w780${backdropPath}`;
+  const getImageUrl = (item: any) => {
+    // Prefer backdrop_url which is landscape and fits aspect-video better
+    if (item.backdrop_url) return item.backdrop_url;
+    if (item.poster_url) return item.poster_url;
+    
+    // Fallback to manual construction if for some reason hooks didn't process them
+    if (item.backdrop_path) {
+      if (item.backdrop_path.startsWith('http')) return item.backdrop_path;
+      return `https://image.tmdb.org/t/p/w780${item.backdrop_path.startsWith('/') ? '' : '/'}${item.backdrop_path}`;
     }
-    if (posterPath) {
-      if (posterPath.startsWith('http')) return posterPath;
-      return `https://image.tmdb.org/t/p/w500${posterPath}`;
+    if (item.poster_path) {
+      if (item.poster_path.startsWith('http')) return item.poster_path;
+      return `https://image.tmdb.org/t/p/w500${item.poster_path.startsWith('/') ? '' : '/'}${item.poster_path}`;
     }
-    return ''; // Background will show white/5 loader base
+    return '';
   };
 
   if (!isSignedIn || isLoading || !history || history.length === 0) return null;
@@ -47,7 +52,7 @@ export const ContinueWatching: React.FC<ContinueWatchingProps> = ({ onPlay }) =>
             >
               <div className="relative aspect-video rounded-2xl overflow-hidden mb-4 bg-white/5 border border-white/10 shadow-2xl">
                 <img
-                  src={getImageUrl(item.backdrop_path, item.poster_path)}
+                  src={getImageUrl(item)}
                   alt={item.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   referrerPolicy="no-referrer"

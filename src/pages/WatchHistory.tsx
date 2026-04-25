@@ -16,14 +16,17 @@ export const WatchHistory: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [activePlayerItem, setActivePlayerItem] = useState<any>(null);
 
-  const getImageUrl = (backdropPath?: string, posterPath?: string) => {
-    if (backdropPath) {
-      if (backdropPath.startsWith('http')) return backdropPath;
-      return `https://image.tmdb.org/t/p/w780${backdropPath}`;
+  const getImageUrl = (item: any) => {
+    if (item.backdrop_url) return item.backdrop_url;
+    if (item.poster_url) return item.poster_url;
+    
+    if (item.backdrop_path) {
+      if (item.backdrop_path.startsWith('http')) return item.backdrop_path;
+      return `https://image.tmdb.org/t/p/w780${item.backdrop_path.startsWith('/') ? '' : '/'}${item.backdrop_path}`;
     }
-    if (posterPath) {
-      if (posterPath.startsWith('http')) return posterPath;
-      return `https://image.tmdb.org/t/p/w500${posterPath}`;
+    if (item.poster_path) {
+      if (item.poster_path.startsWith('http')) return item.poster_path;
+      return `https://image.tmdb.org/t/p/w500${item.poster_path.startsWith('/') ? '' : '/'}${item.poster_path}`;
     }
     return 'https://via.placeholder.com/780x440?text=No+Image';
   };
@@ -114,7 +117,7 @@ export const WatchHistory: React.FC = () => {
               >
                 <div className="aspect-video relative overflow-hidden">
                   <img
-                    src={getImageUrl(item.backdrop_path, item.poster_path)}
+                    src={getImageUrl(item)}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
