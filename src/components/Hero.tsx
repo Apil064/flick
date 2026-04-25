@@ -47,17 +47,24 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
   const variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? '100%' : '-100%',
-      opacity: 0
+      opacity: 0,
+      scale: 1.1
     }),
     center: {
       zIndex: 1,
       x: 0,
-      opacity: 1
+      opacity: 1,
+      scale: 1
     },
     exit: (direction: number) => ({
       zIndex: 0,
-      x: direction < 0 ? '100%' : '-100%',
-      opacity: 0
+      x: direction < 0 ? '50%' : '-50%',
+      opacity: 0,
+      scale: 0.95,
+      transition: {
+        x: { type: "tween", duration: 0.5, ease: "easeInOut" },
+        opacity: { duration: 0.3 }
+      }
     })
   };
 
@@ -67,7 +74,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
   const logoUrl = logo ? `https://image.tmdb.org/t/p/w500${logo.file_path}` : null;
 
   return (
-    <div className="relative h-[85vh] md:h-screen w-full overflow-hidden">
+    <div className="relative h-[85vh] md:h-screen w-full overflow-hidden bg-bg-primary">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={page}
@@ -78,13 +85,14 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
           exit="exit"
           transition={{
             x: { type: "spring", stiffness: 300, damping: 30 },
-            opacity: { duration: 0.5 }
+            opacity: { duration: 0.4 },
+            scale: { duration: 0.5 }
           }}
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={1}
           onDragEnd={handleDragEnd}
-          className="absolute inset-0 cursor-grab active:cursor-grabbing"
+          className="absolute inset-0 cursor-grab active:cursor-grabbing will-change-transform"
         >
           <img
             src={currentItem.backdrop_url}
