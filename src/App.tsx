@@ -9,6 +9,7 @@ import { TVShows } from './pages/TVShows';
 import { NewAndPopular } from './pages/NewAndPopular';
 import { Watchlist } from './pages/Watchlist';
 import { WatchHistory } from './pages/WatchHistory';
+import { Profile } from './pages/Profile';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const queryClient = new QueryClient({
@@ -50,6 +51,7 @@ function App() {
               <Route path="/new" element={<NewAndPopular />} />
               <Route path="/watchlist" element={<Watchlist />} />
               <Route path="/history" element={<WatchHistory />} />
+              <Route path="/profile" element={<Profile />} />
             </Routes>
           </main>
           

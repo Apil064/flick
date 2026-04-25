@@ -58,12 +58,14 @@ export const UserMenu: React.FC = () => {
                   <History className="w-4 h-4 text-accent-red" />
                   Watch History
                 </Link>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium"
+                <Link
+                  to="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium"
                 >
-                  <Settings className="w-4 h-4 text-text-secondary" />
-                  Settings
-                </button>
+                  <User className="w-4 h-4 text-text-secondary" />
+                  Profile Settings
+                </Link>
               </div>
 
               <div className="p-2 border-t border-white/5">
