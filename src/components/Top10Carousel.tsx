@@ -105,17 +105,17 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
             <div 
               key={item.id} 
               className="snap-start flex-shrink-0 relative flex items-end group/item"
-              style={{ paddingLeft: index === 0 ? '20px' : '60px' }}
+              style={{ paddingLeft: index === 0 ? '48px' : '64px' }}
             >
               {/* Number */}
               <div 
-                className="absolute left-0 bottom-0 z-10 select-none pointer-events-none leading-none transition-all duration-500 group-hover/item:-translate-x-2"
+                className="absolute left-0 bottom-[-10px] z-10 select-none pointer-events-none leading-none transition-all duration-500 group-hover/item:-translate-x-3"
                 style={{
-                  fontSize: '150px',
+                  fontSize: '110px',
                   fontWeight: 900,
                   WebkitTextStroke: '2px #E50914',
                   color: 'transparent',
-                  lineHeight: '0.85',
+                  lineHeight: '1',
                 }}
               >
                 <span className="relative">
@@ -129,7 +129,7 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
                       background: 'linear-gradient(to bottom, #ff4c4c, #E50914)',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
-                      filter: 'drop-shadow(0 0 10px rgba(229, 9, 20, 0.4))'
+                      filter: 'drop-shadow(0 0 15px rgba(229, 9, 20, 0.6))'
                     }}
                   >
                     {index + 1}
@@ -138,7 +138,7 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
               </div>
 
               {/* Card */}
-              <div className="relative z-20 ml-10 transition-all duration-500 group-hover/item:scale-105 group-hover/item:translate-x-2">
+              <div className="relative z-20 transition-all duration-500 group-hover/item:scale-105 group-hover/item:translate-x-2">
                 <div className="shadow-2xl rounded-lg overflow-hidden border border-white/5 group-hover/item:border-white/20 transition-colors">
                   <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
                 </div>
