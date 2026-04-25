@@ -25,6 +25,8 @@ const queryClient = new QueryClient({
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
+import { Logo } from './components/Logo';
+
 function App() {
   const isValidKey = CLERK_PUBLISHABLE_KEY?.startsWith('pk_test_') || CLERK_PUBLISHABLE_KEY?.startsWith('pk_live_');
   const showAuthError = CLERK_PUBLISHABLE_KEY && !isValidKey;
@@ -57,7 +59,7 @@ function App() {
           <footer className="py-20 px-6 md:px-16 border-t border-white/5 bg-bg-primary">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-10">
               <div className="space-y-4">
-                <h3 className="text-2xl font-black tracking-tighter text-accent-red italic">FLICK</h3>
+                <Logo />
                 <p className="text-xs text-text-muted leading-relaxed">
                   The ultimate streaming experience. Watch thousands of movies and TV shows anytime, anywhere.
                 </p>

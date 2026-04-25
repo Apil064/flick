@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SearchPage } from '../pages/SearchPage';
 import { UserMenu } from './UserMenu';
 
+import { Logo } from './Logo';
+
 export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -36,8 +38,8 @@ export const Navbar: React.FC = () => {
         }`}
       >
         <div className="flex items-center gap-10">
-          <Link to="/" className="text-3xl font-black tracking-tighter text-accent-red italic">
-            FLICK
+          <Link to="/" className="hover:opacity-80 transition-opacity">
+            <Logo />
           </Link>
 
           <div className="hidden lg:flex items-center gap-6">
