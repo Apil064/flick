@@ -42,10 +42,10 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       .replace('https://image.tmdb.org/t/p/w780', '');
   };
 
-  // Watch Progress Listener from Cineby Player
+  // Watch Progress Listener from VidAPI Player
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Cineby uses postMessage to send current watch position
+      // VidAPI uses postMessage to send current watch position
       if (event.data?.type === 'MEDIA_DATA' && event.data?.data) {
         const { progress } = event.data.data;
         if (progress) {
@@ -153,8 +153,8 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details]);
 
   const playerUrl = type === 'movie'
-    ? `https://player.cineby.workers.dev/movie/${tmdbId}?primaryColor=e40914&secondaryColor=a2a2a2&iconColor=eefdec&icons=default&player=nf&title=true&poster=true&autoplay=true&nextbutton=true&startAt=${startTime}`
-    : `https://player.cineby.workers.dev/tv/${tmdbId}/${currentSeason}/${currentEpisode}?primaryColor=e40914&secondaryColor=a2a2a2&iconColor=eefdec&icons=default&player=nf&title=true&poster=true&autoplay=true&nextbutton=true&startAt=${startTime}`;
+    ? `https://vaplayer.ru/embed/movie/${tmdbId}?primaryColor=e40914&secondaryColor=a2a2a2&iconColor=eefdec&icons=default&player=nf&title=true&poster=true&autoplay=true&nextbutton=true&startAt=${startTime}`
+    : `https://vaplayer.ru/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?primaryColor=e40914&secondaryColor=a2a2a2&iconColor=eefdec&icons=default&player=nf&title=true&poster=true&autoplay=true&nextbutton=true&startAt=${startTime}`;
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

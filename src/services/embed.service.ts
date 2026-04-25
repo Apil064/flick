@@ -2,15 +2,15 @@ export const embedService = {
   getSources(tmdbId: string, type: 'movie' | 'tv', season?: string, episode?: string, imdbId?: string) {
     const sources = [];
 
-    // Primary: VidApi (Cineby's own)
-    const cinebyBase = 'https://player.cineby.workers.dev';
-    const cinebyUrl = type === 'movie' 
-      ? `${cinebyBase}/movie/${tmdbId}`
-      : `${cinebyBase}/tv/${tmdbId}/${season}/${episode}`;
+    // Primary: VidAPI
+    const vidapiBase = 'https://vaplayer.ru/embed';
+    const vidapiUrl = type === 'movie' 
+      ? `${vidapiBase}/movie/${tmdbId}`
+      : `${vidapiBase}/tv/${tmdbId}/${season}/${episode}`;
     
     sources.push({
-      name: 'VidApi (Flick)',
-      url: `${cinebyUrl}?primaryColor=FF0000&secondaryColor=000000&iconColor=FFFFFF`,
+      name: 'VidAPI',
+      url: `${vidapiUrl}?primaryColor=e40914&secondaryColor=a2a2a2&iconColor=eefdec`,
       priority: 1
     });
 
