@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, List, Play, ChevronRight, Maximize, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
-import { CustomVideoPlayer } from './CustomVideoPlayer';
-import axios from 'axios';
 
 interface EmbedPlayerProps {
   tmdbId: string;
@@ -25,9 +23,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
   const [showEpisodeList, setShowEpisodeList] = useState(false);
   const [episodeSearch, setEpisodeSearch] = useState('');
   const [autoNext, setAutoNext] = useState(true);
-  const [videoSource, setVideoSource] = useState<string | null>(null);
-  const [isFetchingSource, setIsFetchingSource] = useState(true);
-  const [debugCustom, setDebugCustom] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   
   const { data: details } = useMovieDetails(type, tmdbId);
@@ -47,54 +42,30 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
       .replace('https://image.tmdb.org/t/p/w780', '');
   };
 
-  // Fetch M3U8 source
+  // Watch Progress Listener from Cineby Player
   useEffect(() => {
-    const fetchSource = async () => {
-      console.log('Fetching source for:', tmdbId, type);
-      setIsFetchingSource(true);
-      try {
-        const response = await axios.get(`/api/embed/vidking-source`, {
-          params: {
-            id: tmdbId,
-            type,
-            season: currentSeason,
-            episode: currentEpisode
-          }
-        });
-        if (response.data.source) {
-          setVideoSource(response.data.source);
-        } else {
-          setVideoSource(null);
+    const handleMessage = (event: MessageEvent) => {
+      // Cineby uses postMessage to send current watch position
+      if (event.data?.type === 'MEDIA_DATA' && event.data?.data) {
+        const { progress } = event.data.data;
+        if (progress) {
+          progressRef.current = progress.watched;
+          durationRef.current = progress.duration;
+          setLocalProgress(progress.watched);
+          setLocalDuration(progress.duration);
         }
-      } catch (error) {
-        console.error('Failed to fetch video source:', error);
-        setVideoSource(null);
-      } finally {
-        setIsFetchingSource(false);
       }
     };
 
-    fetchSource();
-  }, [tmdbId, type, currentSeason, currentEpisode]);
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   // Initialize localProgress and ref correctly when startTime changes
   useEffect(() => {
     setLocalProgress(startTime);
     progressRef.current = startTime;
   }, [startTime, tmdbId, currentSeason, currentEpisode]);
-
-  // Progress tracking for iframe fallback
-  useEffect(() => {
-    if (videoSource) return; // Custom player handles its own progress
-    const interval = setInterval(() => {
-      setLocalProgress(prev => {
-        const next = prev + 1;
-        progressRef.current = next;
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [tmdbId, currentSeason, currentEpisode, videoSource]);
 
   // Auto-next logic - reading from refs for stability
   useEffect(() => {
@@ -181,9 +152,9 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     };
   }, [tmdbId, type, currentSeason, currentEpisode, title, posterPath, backdropPath, details]);
 
-  const fallbackVideoUrl = type === 'movie'
-    ? `https://vidking.net/embed/movie/${tmdbId}?color=E50914`
-    : `https://vidking.net/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?color=E50914`
+  const playerUrl = type === 'movie'
+    ? `https://player.cineby.workers.dev/movie/${tmdbId}?primaryColor=e40914&secondaryColor=a2a2a2&iconColor=eefdec&icons=default&player=nf&title=true&poster=true&autoplay=true&nextbutton=true&startAt=${startTime}`
+    : `https://player.cineby.workers.dev/tv/${tmdbId}/${currentSeason}/${currentEpisode}?primaryColor=e40914&secondaryColor=a2a2a2&iconColor=eefdec&icons=default&player=nf&title=true&poster=true&autoplay=true&nextbutton=true&startAt=${startTime}`;
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -238,108 +209,76 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     >
       {/* Video Container */}
       <div className="flex-1 relative bg-black">
-        {(videoSource || debugCustom) ? (
-          <CustomVideoPlayer
-            key={`${tmdbId}-${currentSeason}-${currentEpisode}-${debugCustom}`}
-            source={debugCustom ? "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" : videoSource!}
-            title={title}
-            type={type}
-            season={currentSeason}
-            episode={currentEpisode}
-            details={details}
-            seasonDetails={seasonDetails}
-            startTime={startTime}
-            onClose={onClose}
-            onProgress={(p, d) => {
-              setLocalProgress(p);
-              setLocalDuration(d);
-              progressRef.current = p;
-              durationRef.current = d;
-            }}
-            onToggleEpisodeList={() => setShowEpisodeList(!showEpisodeList)}
-          />
-        ) : isFetchingSource ? (
-          <div className="w-full h-full flex items-center justify-center bg-black">
-            <div className="w-12 h-12 border-4 border-accent-red border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <>
-            {/* Top Bar (Only for iframe fallback) */}
-            <div className="absolute top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
-              <div className="flex items-center gap-6 pointer-events-auto">
-                <button
-                  onClick={onClose}
-                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 group shadow-2xl"
-                >
-                  <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
-                </button>
-                <div className="flex flex-col">
-                  <h2 className="text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[180px] md:max-w-lg">
-                    {title}
-                  </h2>
-                  {type === 'tv' && (
-                    <div className="flex items-center gap-2.5 mt-0.5">
-                      <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
-                        S{currentSeason} • E{currentEpisode}
-                      </span>
-                      <span className="w-1 h-1 rounded-full bg-white/20" />
-                      <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
-                        {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 pointer-events-auto">
+        <>
+          {/* Top Bar */}
+          <div className="absolute top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none">
+            <div className="flex items-center gap-6 pointer-events-auto">
+              <button
+                onClick={onClose}
+                className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 group shadow-2xl"
+              >
+                <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+              </button>
+              <div className="flex flex-col">
+                <h2 className="text-lg font-black tracking-tighter text-white drop-shadow-2xl truncate max-w-[180px] md:max-w-lg">
+                  {title}
+                </h2>
                 {type === 'tv' && (
-                  <button
-                    onClick={() => setShowEpisodeList(!showEpisodeList)}
-                    className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all border backdrop-blur-xl shadow-2xl ${
-                      showEpisodeList 
-                        ? 'bg-accent-red border-accent-red text-white' 
-                        : 'bg-black/40 border-white/10 text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <List className="w-3.5 h-3.5" />
-                    <span className="hidden md:inline">Browse Episodes</span>
-                  </button>
+                  <div className="flex items-center gap-2.5 mt-0.5">
+                    <span className="text-[10px] text-accent-red font-black uppercase tracking-[0.2em] drop-shadow-md">
+                      S{currentSeason} • E{currentEpisode}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-white/20" />
+                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate max-w-[120px] md:max-w-xs">
+                      {seasonDetails?.episodes?.find((e: any) => e.episode_number === currentEpisode)?.name}
+                    </span>
+                  </div>
                 )}
-
-                <button
-                  onClick={handleFullscreen}
-                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
-                  title="Fullscreen"
-                >
-                  <Maximize className="w-6 h-6" />
-                </button>
-
-                <button
-                  onClick={onClose}
-                  className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-
-                {/* Secret Debug Toggle */}
-                <button 
-                  onDoubleClick={() => setDebugCustom(!debugCustom)}
-                  className="opacity-0 w-4 h-4 absolute top-0 right-0 cursor-default"
-                />
               </div>
             </div>
 
-            <iframe
-              ref={iframeRef}
-              src={fallbackVideoUrl}
-              className="w-full h-full border-none"
-              allowFullScreen
-              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
-              title="Video Player"
-            />
-          </>
-        )}
+            <div className="flex items-center gap-4 pointer-events-auto">
+              {type === 'tv' && (
+                <button
+                  onClick={() => setShowEpisodeList(!showEpisodeList)}
+                  className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-widest transition-all border backdrop-blur-xl shadow-2xl ${
+                    showEpisodeList 
+                      ? 'bg-accent-red border-accent-red text-white' 
+                      : 'bg-black/40 border-white/10 text-white hover:bg-white/10'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Browse Episodes</span>
+                </button>
+              )}
+
+              <button
+                onClick={handleFullscreen}
+                className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
+                title="Fullscreen"
+              >
+                <Maximize className="w-6 h-6" />
+              </button>
+
+              <button
+                onClick={onClose}
+                className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          <iframe
+            ref={iframeRef}
+            src={playerUrl}
+            className="w-full h-full border-none"
+            allowFullScreen
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-fullscreen allow-top-navigation-by-user-activation"
+            title="Video Player"
+          />
+        </>
 
         {/* Episode Sidebar */}
         <AnimatePresence>
