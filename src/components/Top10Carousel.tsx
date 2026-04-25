@@ -102,37 +102,28 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
           style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
         >
           {displayItems.map((item, index) => (
-            <div key={item.id} className="snap-start flex-shrink-0 relative group/item flex items-end pl-10 md:pl-14">
-              {/* Numeric Badge */}
-              <div className="absolute left-0 bottom-[-5%] z-10 select-none pointer-events-none transition-all duration-500 group-hover/item:-translate-x-3 md:group-hover/item:-translate-x-5 origin-bottom-right">
-                <span className="text-[80px] md:text-[130px] font-black leading-[0.8] tracking-tighter transition-all duration-500"
-                      style={{ 
-                        WebkitTextStroke: '1.5px #E50914',
-                        color: 'transparent',
-                      }}>
-                  <span className="relative">
-                    {/* Outline Layer */}
-                    {index + 1}
-                    {/* Fill Layer (Visible on Hover) */}
-                    <span className="absolute inset-0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-500"
-                          style={{ 
-                            color: '#E50914',
-                            WebkitTextStroke: '0px',
-                            filter: 'drop-shadow(0 0 15px rgba(229,9,20,0.8))',
-                            background: 'linear-gradient(to bottom, #ff4d4d, #E50914)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
-                          }}>
-                      {index + 1}
-                    </span>
-                  </span>
-                </span>
+            <div 
+              key={item.id} 
+              className="snap-start flex-shrink-0 relative flex items-end"
+              style={{ paddingLeft: index === 0 ? '20px' : '60px' }}
+            >
+              {/* Number */}
+              <div 
+                className="absolute left-0 bottom-0 z-10 select-none pointer-events-none leading-none"
+                style={{
+                  fontSize: '120px',
+                  fontWeight: 900,
+                  WebkitTextStroke: '2px #E50914',
+                  color: 'transparent',
+                  lineHeight: '0.85',
+                }}
+              >
+                {index + 1}
               </div>
-              
-              <div className="relative z-20 transition-all duration-500">
-                <div className="relative rounded-lg overflow-hidden transition-all duration-500 shadow-2xl">
-                  <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
-                </div>
+
+              {/* Card */}
+              <div className="relative z-20 ml-8 shadow-2xl rounded-lg overflow-hidden transition-transform duration-500 hover:scale-105">
+                <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
               </div>
             </div>
           ))}

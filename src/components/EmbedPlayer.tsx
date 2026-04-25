@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, List, Play, ChevronRight, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
+import { X, ChevronLeft, List, Play, ChevronRight, Maximize, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
 
@@ -157,12 +157,24 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     : `https://vaplayer.ru/embed/tv/${tmdbId}/${currentSeason}/${currentEpisode}?primaryColor=e40914&secondaryColor=a2a2a2&iconColor=eefdec&icons=default&player=nf&title=true&poster=true&autoplay=true&nextbutton=true&startAt=${startTime}`;
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key.toLowerCase() === 'l' || e.key.toLowerCase() === 'e') {
+        if (type === 'tv') setShowEpisodeList(prev => !prev);
+      }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, type]);
+
+  const handleFullscreen = () => {
+    if (iframeRef.current) {
+      iframeRef.current.requestFullscreen().catch(() => {
+        document.documentElement.requestFullscreen();
+      });
+    }
+  };
 
   const handleEpisodeChange = (s: number, e: number) => {
     // Save progress of current episode before switching
@@ -243,6 +255,14 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                   <span className="hidden md:inline">Browse Episodes</span>
                 </button>
               )}
+
+              <button
+                onClick={handleFullscreen}
+                className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
+                title="Fullscreen"
+              >
+                <Maximize className="w-6 h-6" />
+              </button>
 
               <button
                 onClick={onClose}
