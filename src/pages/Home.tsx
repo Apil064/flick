@@ -61,7 +61,7 @@ export const Home: React.FC = () => {
       />
 
       {/* Carousels */}
-      <div className="relative z-10 mt-20 md:mt-32 space-y-12">
+      <div className="relative z-10 -mt-6 md:-mt-12 space-y-12">
         {isSignedIn && <ContinueWatching onPlay={handleDirectPlay} />}
         
         <Top10Carousel
