@@ -9,20 +9,25 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
-  const [index, setIndex] = useState(0);
+  const [[page, direction], setPage] = useState([0, 0]);
+  const index = Math.abs(page % Math.min(items.length, 10));
   const currentItem = items?.[index];
   const type = currentItem?.media_type || 'movie';
   
   const { data: images } = useMovieImages(type, currentItem?.id?.toString());
   const { data: details } = useMovieDetails(type, currentItem?.id?.toString());
 
+  const paginate = (newDirection: number) => {
+    setPage([page + newDirection, newDirection]);
+  };
+
   useEffect(() => {
     if (!items || items.length === 0) return;
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % Math.min(items.length, 10));
+      paginate(1);
     }, 7000);
     return () => clearInterval(interval);
-  }, [items, index]); // Add index to dependencies to reset interval on manual slide
+  }, [items, page]);
 
   if (!items || items.length === 0) {
     return <div className="h-[85vh] md:h-screen w-full bg-bg-primary" />;
@@ -33,12 +38,27 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
   const handleDragEnd = (_event: any, info: any) => {
     const threshold = 50;
     if (info.offset.x > threshold) {
-      // Swipe right -> previous
-      setIndex((prev) => (prev - 1 + Math.min(items.length, 10)) % Math.min(items.length, 10));
+      paginate(-1);
     } else if (info.offset.x < -threshold) {
-      // Swipe left -> next
-      setIndex((prev) => (prev + 1) % Math.min(items.length, 10));
+      paginate(1);
     }
+  };
+
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? '100%' : '-100%',
+      opacity: 0
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? '100%' : '-100%',
+      opacity: 0
+    })
   };
 
   const logo = images?.logos?.find((l: any) => l.iso_639_1 === 'en' && l.file_path.endsWith('.png')) || 
@@ -47,17 +67,22 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
   const logoUrl = logo ? `https://image.tmdb.org/t/p/w500${logo.file_path}` : null;
 
   return (
-    <div className="relative h-[85vh] md:h-screen w-full overflow-hidden touch-none">
-      <AnimatePresence mode="wait">
+    <div className="relative h-[85vh] md:h-screen w-full overflow-hidden">
+      <AnimatePresence initial={false} custom={direction}>
         <motion.div
-          key={currentItem.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1 }}
+          key={page}
+          custom={direction}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{
+            x: { type: "spring", stiffness: 300, damping: 30 },
+            opacity: { duration: 0.5 }
+          }}
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.2}
+          dragElastic={1}
           onDragEnd={handleDragEnd}
           className="absolute inset-0 cursor-grab active:cursor-grabbing"
         >
