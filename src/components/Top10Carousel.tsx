@@ -104,26 +104,44 @@ export const Top10Carousel: React.FC<Top10CarouselProps> = ({ title, items, type
           {displayItems.map((item, index) => (
             <div 
               key={item.id} 
-              className="snap-start flex-shrink-0 relative flex items-end"
+              className="snap-start flex-shrink-0 relative flex items-end group/item"
               style={{ paddingLeft: index === 0 ? '20px' : '60px' }}
             >
               {/* Number */}
               <div 
-                className="absolute left-0 bottom-0 z-10 select-none pointer-events-none leading-none"
+                className="absolute left-0 bottom-0 z-10 select-none pointer-events-none leading-none transition-all duration-500 group-hover/item:-translate-x-2"
                 style={{
-                  fontSize: '120px',
+                  fontSize: '150px',
                   fontWeight: 900,
                   WebkitTextStroke: '2px #E50914',
                   color: 'transparent',
                   lineHeight: '0.85',
                 }}
               >
-                {index + 1}
+                <span className="relative">
+                  {index + 1}
+                  {/* Fill Layer on Hover */}
+                  <span 
+                    className="absolute inset-0 opacity-0 group-hover/item:opacity-100 transition-opacity duration-500"
+                    style={{
+                      WebkitTextStroke: '0px',
+                      color: '#E50914',
+                      background: 'linear-gradient(to bottom, #ff4c4c, #E50914)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      filter: 'drop-shadow(0 0 10px rgba(229, 9, 20, 0.4))'
+                    }}
+                  >
+                    {index + 1}
+                  </span>
+                </span>
               </div>
 
               {/* Card */}
-              <div className="relative z-20 ml-8 shadow-2xl rounded-lg overflow-hidden transition-transform duration-500 hover:scale-105">
-                <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
+              <div className="relative z-20 ml-10 transition-all duration-500 group-hover/item:scale-105 group-hover/item:translate-x-2">
+                <div className="shadow-2xl rounded-lg overflow-hidden border border-white/5 group-hover/item:border-white/20 transition-colors">
+                  <MovieCard item={item} type={type} onClick={() => onItemClick(item)} />
+                </div>
               </div>
             </div>
           ))}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, List, Play, ChevronRight, Maximize, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
+import { X, ChevronLeft, List, Play, ChevronRight, Search, ToggleLeft as Toggle, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMovieDetails, useTVSeason, useSaveProgress } from '../hooks/useMovies';
 
@@ -168,14 +168,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, type]);
 
-  const handleFullscreen = () => {
-    if (iframeRef.current) {
-      iframeRef.current.requestFullscreen().catch(() => {
-        document.documentElement.requestFullscreen();
-      });
-    }
-  };
-
   const handleEpisodeChange = (s: number, e: number) => {
     // Save progress of current episode before switching
     const duration = localDuration || (details?.episode_run_time?.[0] || 45) * 60;
@@ -255,14 +247,6 @@ export const EmbedPlayer: React.FC<EmbedPlayerProps> = ({
                   <span className="hidden md:inline">Browse Episodes</span>
                 </button>
               )}
-
-              <button
-                onClick={handleFullscreen}
-                className="p-2.5 bg-black/40 backdrop-blur-xl hover:bg-white/10 rounded-full transition-all border border-white/10 shadow-2xl"
-                title="Fullscreen"
-              >
-                <Maximize className="w-6 h-6" />
-              </button>
 
               <button
                 onClick={onClose}
