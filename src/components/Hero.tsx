@@ -56,7 +56,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-16 pt-20">
+      <div className="absolute inset-0 flex flex-col justify-center px-6 md:px-16 pt-20 pb-20 md:pb-32">
         <motion.div
           key={currentItem.id}
           initial={{ y: 30, opacity: 0 }}
