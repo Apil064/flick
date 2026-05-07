@@ -73,9 +73,21 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
                images?.logos?.[0];
   const logoUrl = logo ? `https://image.tmdb.org/t/p/w500${logo.file_path}` : null;
 
+  // Pre-load next and previous images
+  useEffect(() => {
+    if (!items || items.length === 0) return;
+    const nextIndex = Math.abs((page + 1) % Math.min(items.length, 10));
+    const prevIndex = Math.abs((page - 1 + Math.min(items.length, 10)) % Math.min(items.length, 10));
+    
+    [nextIndex, prevIndex].forEach(i => {
+      const img = new Image();
+      img.src = items[i].backdrop_url;
+    });
+  }, [page, items]);
+
   return (
     <div className="relative h-[85vh] md:h-screen w-full overflow-hidden bg-bg-primary">
-      <AnimatePresence initial={false} custom={direction}>
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
         <motion.div
           key={page}
           custom={direction}
