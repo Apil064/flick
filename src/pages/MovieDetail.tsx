@@ -15,24 +15,27 @@ interface MovieDetailProps {
 export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, onItemClick }) => {
   const { isSignedIn } = useUser();
   const [showPlayer, setShowPlayer] = useState(false);
-  const [selectedEpisode, setSelectedEpisode] = useState({ 
-    season: item.season || 1, 
-    episode: item.episode || 1,
-    startTime: item.progress_seconds || 0,
-    title: item.title,
-    posterPath: item.poster_path || item.poster_url?.replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w780', ''),
-    backdropPath: item.backdrop_path || item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/w780', '')
+  const [selectedEpisode, setSelectedEpisode] = useState({
+    season: item?.season || 1,
+    episode: item?.episode || 1,
+    startTime: item?.progress_seconds || 0,
+    title: item?.title,
+    posterPath: item?.poster_path || item?.poster_url?.replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w780', ''),
+    backdropPath: item?.backdrop_path || item?.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/w780', '')
   });
-  const [activeSeason, setActiveSeason] = useState(item.season || 1);
-  
-  const { data: details, isLoading } = useMovieDetails(type, item.id);
-  const { data: credits } = useMovieCredits(type, item.id);
-  const { data: similar } = useSimilar(type, item.id);
-  const { data: seasonDetails } = useTVSeason(item.id.toString(), activeSeason);
+  const [activeSeason, setActiveSeason] = useState(item?.season || 1);
+
+  // ALL hooks must be called unconditionally before any early return
+  const itemId = item?.id?.toString() ?? '';
+  const { data: details, isLoading } = useMovieDetails(type, itemId);
+  const { data: credits } = useMovieCredits(type, itemId);
+  const { data: similar } = useSimilar(type, itemId);
+  const { data: seasonDetails } = useTVSeason(itemId, activeSeason);
   const { data: watchlist } = useWatchlist();
   const { mutate: addToWatchlist } = useAddToWatchlist();
   const { mutate: removeFromWatchlist } = useRemoveFromWatchlist();
 
+  // Early return AFTER all hooks
   if (!item) return null;
 
   const isInWatchlist = watchlist?.some((w: any) => String(w.tmdb_id) === String(item.id));
@@ -40,10 +43,10 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
   const handleWatchNow = (s = 1, e = 1, t = 0) => {
     const cleanPoster = item.poster_path || item.poster_url?.replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w780', '');
     const cleanBackdrop = item.backdrop_path || item.backdrop_url?.replace('https://image.tmdb.org/t/p/original', '').replace('https://image.tmdb.org/t/p/w500', '').replace('https://image.tmdb.org/t/p/w780', '');
-    
-    setSelectedEpisode({ 
-      season: s, 
-      episode: e, 
+
+    setSelectedEpisode({
+      season: s,
+      episode: e,
       startTime: t,
       title: item.title,
       posterPath: cleanPoster,
@@ -54,7 +57,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
 
   const handleWatchlistClick = () => {
     if (!isSignedIn) return;
-    
+
     if (isInWatchlist) {
       removeFromWatchlist(String(item.id));
     } else {
@@ -99,7 +102,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
             <X className="w-6 h-6" />
           </button>
 
-          {/* Left Side: Poster (Hidden on mobile) */}
+          {/* Left Side: Poster */}
           <div className="hidden md:block w-1/3 relative">
             <img
               src={posterUrl}
@@ -175,8 +178,8 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                 onClick={handleWatchlistClick}
                 disabled={!isSignedIn}
                 className={`flex-1 md:flex-none px-10 py-4 font-black rounded-full transition-all border flex items-center justify-center gap-3 shadow-2xl group/watchlist ${
-                  isInWatchlist 
-                    ? 'bg-accent-red border-accent-red text-white scale-105 shadow-accent-red/20' 
+                  isInWatchlist
+                    ? 'bg-accent-red border-accent-red text-white scale-105 shadow-accent-red/20'
                     : 'bg-white/5 text-white hover:bg-white/10 border-white/20'
                 }`}
               >
@@ -199,7 +202,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-black tracking-tighter uppercase italic text-accent-red">Episodes</h3>
-                  <select 
+                  <select
                     value={activeSeason}
                     onChange={(e) => setActiveSeason(Number(e.target.value))}
                     className="bg-bg-secondary border border-white/10 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest outline-none focus:border-accent-red transition-all cursor-pointer"
@@ -238,7 +241,7 @@ export const MovieDetail: React.FC<MovieDetailProps> = ({ item, type, onClose, o
                           {ep.name}
                         </h4>
                         <p className="text-[10px] text-text-secondary line-clamp-2 leading-relaxed">
-                          {ep.overview || "No description available."}
+                          {ep.overview || 'No description available.'}
                         </p>
                       </div>
                     </button>

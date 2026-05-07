@@ -82,31 +82,32 @@ export const useOnAir = () => useQuery({
 export const useMovieDetails = (type: 'movie' | 'tv', id: string) => useQuery({
   queryKey: ['details', type, id],
   queryFn: () => API.get(`${type === 'movie' ? 'movies' : 'tv'}/${id}`).then(r => r.data),
-  enabled: !!id,
+  // Only fetch when we have a real id (not empty string)
+  enabled: !!id && id.length > 0,
 });
 
 export const useMovieImages = (type: 'movie' | 'tv', id: string) => useQuery({
   queryKey: ['images', type, id],
   queryFn: () => API.get(`${type === 'movie' ? 'movies' : 'tv'}/${id}/images`).then(r => r.data),
-  enabled: !!id,
+  enabled: !!id && id.length > 0,
 });
 
 export const useMovieCredits = (type: 'movie' | 'tv', id: string) => useQuery({
   queryKey: ['credits', type, id],
   queryFn: () => API.get(`${type === 'movie' ? 'movies' : 'tv'}/${id}/credits`).then(r => r.data),
-  enabled: !!id,
+  enabled: !!id && id.length > 0,
 });
 
 export const useSimilar = (type: 'movie' | 'tv', id: string) => useQuery({
   queryKey: ['similar', type, id],
   queryFn: () => API.get(`${type === 'movie' ? 'movies' : 'tv'}/${id}/similar`).then(r => r.data),
-  enabled: !!id,
+  enabled: !!id && id.length > 0,
 });
 
 export const useRecommendations = (type: 'movie' | 'tv', id: string) => useQuery({
   queryKey: ['recommendations', type, id],
   queryFn: () => API.get(`${type === 'movie' ? 'movies' : 'tv'}/${id}/recommendations`).then(r => r.data),
-  enabled: !!id,
+  enabled: !!id && id.length > 0,
 });
 
 export const useMovieSearch = (query: string) => useQuery({
@@ -124,7 +125,8 @@ export const useByGenre = (type: 'movie' | 'tv', genreId: string) => useQuery({
 export const useTVSeason = (tvId: string, seasonNumber: number) => useQuery({
   queryKey: ['season', tvId, seasonNumber],
   queryFn: () => API.get(`tv/${tvId}/season/${seasonNumber}`).then(r => r.data),
-  enabled: !!tvId && seasonNumber !== undefined,
+  // Guard: tvId must be a non-empty string and seasonNumber must be a valid positive number
+  enabled: !!tvId && tvId.length > 0 && typeof seasonNumber === 'number' && seasonNumber > 0,
 });
 
 export const useWatchlist = () => {
@@ -152,9 +154,9 @@ export const useAddToWatchlist = () => {
       await queryClient.cancelQueries({ queryKey: ['watchlist'] });
       const previousWatchlist = queryClient.getQueryData(['watchlist']);
       queryClient.setQueryData(['watchlist'], (old: any) => [
-        ...(old || []), 
-        { 
-          ...newItem, 
+        ...(old || []),
+        {
+          ...newItem,
           id: newItem.tmdb_id,
           poster_url: newItem.poster_path ? `https://image.tmdb.org/t/p/w500${newItem.poster_path}` : null,
           backdrop_url: newItem.backdrop_path ? `https://image.tmdb.org/t/p/original${newItem.backdrop_path}` : null,
@@ -162,7 +164,7 @@ export const useAddToWatchlist = () => {
       ]);
       return { previousWatchlist };
     },
-    onError: (err, newItem, context) => {
+    onError: (_err, _newItem, context) => {
       queryClient.setQueryData(['watchlist'], context?.previousWatchlist);
     },
     onSettled: () => {
@@ -178,12 +180,12 @@ export const useRemoveFromWatchlist = () => {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['watchlist'] });
       const previousWatchlist = queryClient.getQueryData(['watchlist']);
-      queryClient.setQueryData(['watchlist'], (old: any) => 
+      queryClient.setQueryData(['watchlist'], (old: any) =>
         (old || []).filter((item: any) => String(item.tmdb_id) !== String(id))
       );
       return { previousWatchlist };
     },
-    onError: (err, id, context) => {
+    onError: (_err, _id, context) => {
       queryClient.setQueryData(['watchlist'], context?.previousWatchlist);
     },
     onSettled: () => {

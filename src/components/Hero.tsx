@@ -10,15 +10,20 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
   const [[page, direction], setPage] = useState([0, 0]);
-  const index = Math.abs(page % Math.min(items.length, 10));
-  const currentItem = items?.[index];
-  const type = currentItem?.media_type || 'movie';
   
-  const { data: images } = useMovieImages(type, currentItem?.id?.toString());
-  const { data: details } = useMovieDetails(type, currentItem?.id?.toString());
+  const safeLength = Math.min(items?.length || 0, 10);
+  const index = safeLength > 0 ? Math.abs(page % safeLength) : 0;
+  const currentItem = items?.[index] ?? null;
+  
+  // Always call hooks unconditionally - use empty string when no item
+  const currentId = currentItem?.id?.toString() ?? '';
+  const currentType = (currentItem?.media_type as 'movie' | 'tv') || 'movie';
+  
+  const { data: images } = useMovieImages(currentType, currentId);
+  const { data: details } = useMovieDetails(currentType, currentId);
 
   const paginate = (newDirection: number) => {
-    setPage([page + newDirection, newDirection]);
+    setPage(([p]) => [p + newDirection, newDirection]);
   };
 
   useEffect(() => {
@@ -27,7 +32,20 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
       paginate(1);
     }, 7000);
     return () => clearInterval(interval);
-  }, [items, page]);
+  }, [items?.length, page]);
+
+  // Pre-load next/prev images
+  useEffect(() => {
+    if (!items || items.length < 2) return;
+    const nextIndex = Math.abs((page + 1) % safeLength);
+    const prevIndex = Math.abs((page - 1 + safeLength) % safeLength);
+    [nextIndex, prevIndex].forEach(i => {
+      if (items[i]?.backdrop_url) {
+        const img = new Image();
+        img.src = items[i].backdrop_url;
+      }
+    });
+  }, [page, items, safeLength]);
 
   if (!items || items.length === 0) {
     return <div className="h-[85vh] md:h-screen w-full bg-bg-primary" />;
@@ -45,8 +63,8 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
   };
 
   const variants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? '100%' : '-100%',
+    enter: (dir: number) => ({
+      x: dir > 0 ? '100%' : '-100%',
       opacity: 0,
       scale: 1.1
     }),
@@ -56,34 +74,23 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
       opacity: 1,
       scale: 1
     },
-    exit: (direction: number) => ({
+    exit: (dir: number) => ({
       zIndex: 0,
-      x: direction < 0 ? '50%' : '-50%',
+      x: dir < 0 ? '50%' : '-50%',
       opacity: 0,
       scale: 0.95,
       transition: {
-        x: { type: "tween", duration: 0.5, ease: "easeInOut" },
+        x: { type: 'tween', duration: 0.5, ease: 'easeInOut' },
         opacity: { duration: 0.3 }
       }
     })
   };
 
-  const logo = images?.logos?.find((l: any) => l.iso_639_1 === 'en' && l.file_path.endsWith('.png')) || 
-               images?.logos?.find((l: any) => l.iso_639_1 === 'en') || 
-               images?.logos?.[0];
+  const logo =
+    images?.logos?.find((l: any) => l.iso_639_1 === 'en' && l.file_path?.endsWith('.png')) ||
+    images?.logos?.find((l: any) => l.iso_639_1 === 'en') ||
+    images?.logos?.[0];
   const logoUrl = logo ? `https://image.tmdb.org/t/p/w500${logo.file_path}` : null;
-
-  // Pre-load next and previous images
-  useEffect(() => {
-    if (!items || items.length === 0) return;
-    const nextIndex = Math.abs((page + 1) % Math.min(items.length, 10));
-    const prevIndex = Math.abs((page - 1 + Math.min(items.length, 10)) % Math.min(items.length, 10));
-    
-    [nextIndex, prevIndex].forEach(i => {
-      const img = new Image();
-      img.src = items[i].backdrop_url;
-    });
-  }, [page, items]);
 
   return (
     <div className="relative h-[85vh] md:h-screen w-full overflow-hidden bg-bg-primary">
@@ -96,7 +103,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
           animate="center"
           exit="exit"
           transition={{
-            x: { type: "spring", stiffness: 300, damping: 30 },
+            x: { type: 'spring', stiffness: 300, damping: 30 },
             opacity: { duration: 0.4 },
             scale: { duration: 0.5 }
           }}
@@ -113,7 +120,7 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
             referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 hero-gradient pointer-events-none" />
-          
+
           <div className="absolute inset-0 flex flex-col justify-end px-6 md:px-16 pt-20 pb-16 md:pb-24 pointer-events-none">
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -133,9 +140,9 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
               </div>
 
               {logoUrl ? (
-                <img 
-                  src={logoUrl} 
-                  alt={currentItem.title} 
+                <img
+                  src={logoUrl}
+                  alt={currentItem.title}
                   className="h-16 md:h-28 max-w-[280px] md:max-w-[380px] object-contain drop-shadow-2xl"
                   referrerPolicy="no-referrer"
                 />
@@ -158,15 +165,15 @@ export const Hero: React.FC<HeroProps> = ({ items, onItemClick }) => {
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                <button 
-                  onClick={() => onItemClick(currentItem, type)}
+                <button
+                  onClick={() => onItemClick(currentItem, currentType)}
                   className="px-6 py-2.5 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group shadow-lg"
                 >
                   <Play className="w-4 h-4 fill-black" />
                   <span className="tracking-tighter text-xs uppercase">PLAY NOW</span>
                 </button>
-                <button 
-                  onClick={() => onItemClick(currentItem, type)}
+                <button
+                  onClick={() => onItemClick(currentItem, currentType)}
                   className="px-6 py-2.5 bg-bg-secondary/40 backdrop-blur-xl text-white font-black rounded-full hover:bg-white/10 transition-all border border-white/10 flex items-center justify-center gap-2 shadow-lg"
                 >
                   <Info className="w-4 h-4" />
